@@ -93,3 +93,91 @@ func TestSudokuSolved(t *testing.T) {
 		t.Errorf("Expected sudoku to be SOLVED, but got NOT solved")
 	}
 }
+
+func TestGetRow(t *testing.T) {
+	mySudoku := newSudokuFromFile("tests/simple_2.txt")
+
+	testRow := row{1, 5, 2, 4, 8, 9, 3, 7, 6}
+	valRow := mySudoku.getRow(0)
+
+	for index, val := range valRow {
+		if val != testRow[index] {
+			t.Errorf("Correct row not retrieved")
+		}
+	}
+}
+
+func TestGetColumn(t *testing.T) {
+	mySudoku := newSudokuFromFile("tests/simple_2.txt")
+
+	testRow := row{5, 3, 6, 8, 9, 4, 1, 2, 7}
+	valRow := mySudoku.getColumn(1)
+
+	for index, val := range valRow {
+		if val != testRow[index] {
+			t.Errorf("Correct column not retrieved")
+		}
+	}
+}
+
+func TestGetBoundexBox(t *testing.T) {
+	mySudoku := newSudokuFromFile("tests/simple_2.txt")
+
+	testRow := row{3, 7, 6, 8, 4, 1, 2, 9, 5}
+	valRow := mySudoku.getBoundedBox(0, 7)
+
+	for index, val := range valRow {
+		if val != testRow[index] {
+			t.Errorf("Correct boundex box not retrieved")
+		}
+	}
+
+	testRow = row{1, 2, 4, 7, 6, 3, 8, 9, 5}
+	valRow = mySudoku.getBoundedBox(3, 5)
+
+	for index, val := range valRow {
+		if val != testRow[index] {
+			t.Errorf("Correct bounded box not retrieved")
+		}
+	}
+}
+
+func TestGetEligibleMap(t *testing.T) {
+	mySudoku := newSudokuFromFile("tests/simple_2.txt")
+
+	myMap := mySudoku.getEligibleMap(3, 5)
+
+	for _, val := range myMap {
+		if val {
+			t.Errorf("Expected no numbers to be eligible on a solved sudoku")
+		}
+	}
+
+	mySudoku = newSudokuFromFile("tests/simple_1.txt")
+
+	myMap = mySudoku.getEligibleMap(0, 0)
+
+	fmt.Println(myMap)
+	for index, val := range myMap {
+		if val {
+			if index == 3 || index == 4 || index == 5 {
+			} else {
+				t.Errorf("Expected only eligible numbers to be 3, 4 or 5")
+			}
+		}
+	}
+
+	mySudoku = newSudokuFromFile("tests/simple_1.txt")
+
+	myMap = mySudoku.getEligibleMap(0, 1)
+
+	fmt.Println(myMap)
+	for index, val := range myMap {
+		if val {
+			if index == 3 {
+			} else {
+				t.Errorf("Expected only eligible numbers to be 3, 4 or 5")
+			}
+		}
+	}
+}
