@@ -142,12 +142,14 @@ func TestGetBoundexBox(t *testing.T) {
 	}
 }
 
-func TestGetEligibleMap(t *testing.T) {
+func TestMapEligibleNumbers(t *testing.T) {
 	mySudoku := newSudokuFromFile("tests/simple_2.txt")
 
-	myMap := mySudoku.getEligibleMap(3, 5)
+	c := make(chan cell)
+	go mySudoku.mapEligibleNumbers(3, 5, c)
+	myCell := <-c
 
-	for _, val := range myMap {
+	for _, val := range myCell.eligibleNumbers {
 		if val {
 			t.Errorf("Expected no numbers to be eligible on a solved sudoku")
 		}
@@ -155,10 +157,10 @@ func TestGetEligibleMap(t *testing.T) {
 
 	mySudoku = newSudokuFromFile("tests/simple_1.txt")
 
-	myMap = mySudoku.getEligibleMap(0, 0)
+	go mySudoku.mapEligibleNumbers(0, 0, c)
+	myCell = <-c
 
-	fmt.Println(myMap)
-	for index, val := range myMap {
+	for index, val := range myCell.eligibleNumbers {
 		if val {
 			if index == 3 || index == 4 || index == 5 {
 			} else {
@@ -169,10 +171,10 @@ func TestGetEligibleMap(t *testing.T) {
 
 	mySudoku = newSudokuFromFile("tests/simple_1.txt")
 
-	myMap = mySudoku.getEligibleMap(0, 1)
+	go mySudoku.mapEligibleNumbers(0, 1, c)
+	myCell = <-c
 
-	fmt.Println(myMap)
-	for index, val := range myMap {
+	for index, val := range myCell.eligibleNumbers {
 		if val {
 			if index == 3 {
 			} else {
@@ -180,4 +182,39 @@ func TestGetEligibleMap(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestUnfilledCount(t *testing.T) {
+	mySudoku := newSudokuFromFile("tests/simple_2.txt")
+	if mySudoku.unfilledCount() != 0 {
+		t.Errorf("Expected no unfilled count on a solved sudoku")
+	}
+
+	mySudoku = newSudokuFromFile("tests/simple_1.txt")
+	if mySudoku.unfilledCount() == 0 {
+		t.Errorf("Expected unfilled count on an unsolved sudoku")
+	}
+
+}
+
+func TestGetSingularEligibleNumber(t *testing.T) {
+	myMap := standardMap()
+	for key := range myMap {
+		myMap[key] = false
+		if key == 8 {
+			myMap[key] = true
+		}
+	}
+
+	singVal := myMap.getSingularEligibleNumber()
+	if singVal != 8 {
+		t.Errorf("Expected eligible number to be 8")
+	}
+
+	myMap = standardMap()
+	singVal = myMap.getSingularEligibleNumber()
+	if singVal != 0 {
+		t.Errorf("Expected eligible number to be 0")
+	}
+
 }

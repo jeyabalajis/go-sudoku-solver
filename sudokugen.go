@@ -47,12 +47,6 @@ func genRandomNumber(maxNumber int) int {
 	return randNum
 }
 
-func (s sudoku) print() {
-	for i, col := range s {
-		fmt.Println(i, col)
-	}
-}
-
 func (r row) print() {
 	for i, col := range r {
 		fmt.Println(i, col)

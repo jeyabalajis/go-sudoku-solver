@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type row []int
 type sudoku []row
 
@@ -191,6 +193,12 @@ func (s sudoku) getColumn(colID int) row {
 	return myColumn
 }
 
+func (s sudoku) print() {
+	for i, col := range s {
+		fmt.Println(i, col)
+	}
+}
+
 func (s sudoku) getBoundedBox(rowID int, colID int) row {
 	var myBB row
 	rowMin, rowMax, colMin, colMax := _getBoundedBoxBoundaries(rowID, colID)
@@ -205,9 +213,41 @@ func (s sudoku) getBoundedBox(rowID int, colID int) row {
 	return myBB
 }
 
+func (s sudoku) mapEligibleNumbers(rowID int, colID int, c chan cell) {
+	eligibleNumsMap := s._GetEligibleMap(rowID, colID)
+	c <- cell{rowID: rowID, colID: colID, eligibleNumbers: eligibleNumsMap}
+}
+
+func (s sudoku) fillEligibleNumber(ec cell, c chan bool) {
+	myMap := ec.eligibleNumbers
+	rowID := ec.rowID
+	colID := ec.colID
+
+	eligNum := myMap.getSingularEligibleNumber()
+
+	if eligNum != 0 {
+		s[rowID][colID] = eligNum
+		c <- true
+		return
+	}
+
+	c <- false
+}
+
+func (s sudoku) unfilledCount() (unfilled int) {
+	for _, row := range s {
+		for _, col := range row {
+			if col == 0 {
+				unfilled++
+			}
+		}
+	}
+	return unfilled
+}
+
 // getEligibleMap gets a map of eligible numbers for a particular position
 // in the sudoku puzzle
-func (s sudoku) getEligibleMap(rowID int, colID int) EligibleNumbers {
+func (s sudoku) _GetEligibleMap(rowID int, colID int) EligibleNumbers {
 	myMap := standardMap()
 
 	// first get the row, column and bounded box corresponding to the position
@@ -279,4 +319,19 @@ func (r row) complete() bool {
 		}
 	}
 	return true
+}
+
+func (en EligibleNumbers) getSingularEligibleNumber() (eligNum int) {
+	eligNumCount := 0
+	for key, val := range en {
+		if val {
+			eligNumCount++
+			eligNum = key
+		}
+	}
+	if eligNumCount == 1 {
+		return eligNum
+	}
+
+	return 0
 }

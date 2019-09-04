@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 // Take an unsolved sudoku input and return a solved sudoku output
 func solve(sudokuIn sudoku) (sudokuOut sudoku, solved bool, err error) {
 
@@ -14,36 +16,55 @@ func solve(sudokuIn sudoku) (sudokuOut sudoku, solved bool, err error) {
 		fire up mapper for all 81 columns concurrently since nothing is going to be filled. Just the eligible numbers
 		would be mapped in this run for the column passed.
 
-		fire up reducer by bounding boxes concurrently (total nine concurrent threads)
-		fire up reducer by rows concurrently (total nine concurrent threads)
-		fire up reducer by columns concurrently (total nine concurrent threads)
+		fire up reducer for all 81 columns concurrently to fill up the cell if there is a singular eligible number
 
-		in the reducer, each concurrent thread will be working on non overlapping columns and fill up / firm up the values
-		and reduce eligible numbers
+		in the reducer, each concurrent thread will be working on non overlapping columns and fill up the cell
 	*/
 
 	sudokuOut = sudokuIn
+	mapResults := make([]cell, 0)
+	unfilledCount := 0
+	iteration := 0
 
 	for {
+		// If the sudoku is solved, exit out of the routine
 		if sudokuOut.solved() {
 			break
 		}
 
+		unfilledCount = sudokuOut.unfilledCount()
+		c := make(chan cell)
+
+		iteration++
+
+		// call map function concurrently for all the cells
+		for rowID, row := range sudokuOut {
+			for colID, col := range row {
+				if col == 0 {
+					go sudokuOut.mapEligibleNumbers(rowID, colID, c)
+					myCell := <-c
+					mapResults = append(mapResults, myCell)
+				}
+			}
+		}
+
+		// call reduce/fill function concurrently for all the cells
+		for _, _cell := range mapResults {
+			c := make(chan bool)
+			go sudokuOut.fillEligibleNumber(_cell, c)
+			myResult := <-c
+			if myResult {
+				fmt.Println(_cell.rowID, _cell.colID, myResult)
+			}
+		}
+
+		// If no cells have been reduced, there is no point in repeating, start brute force
+		if sudokuOut.unfilledCount() >= unfilledCount {
+			fmt.Println("giving up!")
+			break
+		}
+		fmt.Println("iteration: ", iteration)
 	}
 
 	return sudokuOut, sudokuOut.solved(), nil
 }
-
-// func (s sudoku) _map(rowID int, colID int) {
-// 	eligibleNumbers := make(map[int]int)
-
-// 	// traverse through the row and collect eligible numbers
-// 	for _, col := range s[rowID] {
-
-// 	}
-// 	// traverse through the column and collect eligible numbers
-
-// 	// traverse through the bounded box and collect eligible numbers
-
-// 	// prepare the final set of eligible numbers and send it
-// }

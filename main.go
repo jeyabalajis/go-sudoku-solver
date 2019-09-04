@@ -1,15 +1,14 @@
 package main
 
+import "fmt"
+
 func main() {
-	mySudoku := newSudoku(6)
+	mySudoku := newSudokuFromFile("tests/simple_3c.txt")
 
 	mySudoku.print()
+	solvedSudoku, solved, err := solve(mySudoku)
 
-	// for i := 0; i < 10000000; i++ {
-	// 	randNum := genRandomNumber(10)
-	// 	if randNum == 10 {
-	// 		fmt.Println("nine!")
-	// 	}
-	// 	// fmt.Println(randNum)
-	// }
+	solvedSudoku.print()
+	fmt.Println(solved)
+	fmt.Println(err)
 }
