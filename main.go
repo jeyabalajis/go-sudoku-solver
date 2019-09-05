@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 func main() {
-	mySudoku := newSudokuFromFile("tests/simple_3.txt")
+	mySudoku := newSudokuFromFile("tests/hard_1.txt")
 
 	mySudoku.print()
 	solvedSudoku, solved, err := solve(mySudoku)

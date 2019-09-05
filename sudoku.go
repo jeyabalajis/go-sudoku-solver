@@ -236,9 +236,11 @@ func (s sudoku) fillEligibleNumber(ec cell) int {
 	rowID := ec.rowID
 	colID := ec.colID
 
+	ec.eligibleNumbers.print()
 	eligNum := myMap.getSingularEligibleNumber()
 
 	if eligNum >= 1 && eligNum <= 9 {
+		fmt.Println("filling ", rowID, colID, eligNum)
 		s[rowID][colID] = eligNum
 	}
 
@@ -357,4 +359,14 @@ func (en EligibleNumbers) getSingularEligibleNumber() (eligNum int) {
 
 	// If more than one number is eligible, send 0
 	return 0
+}
+
+func (en EligibleNumbers) print() {
+	ea := make([]int, 0)
+	for key, val := range en {
+		if val {
+			ea = append(ea, key)
+		}
+	}
+	fmt.Println(ea)
 }
