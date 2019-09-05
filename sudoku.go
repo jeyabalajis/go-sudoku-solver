@@ -176,6 +176,19 @@ func (s sudoku) solved() bool {
 	return true
 }
 
+func (s sudoku) copy() sudoku {
+	mySudoku := make(sudoku, 0)
+
+	for _, _row := range s {
+		myRow := make(row, 0)
+		for _, _col := range _row {
+			myRow = append(myRow, _col)
+		}
+		mySudoku = append(mySudoku, myRow)
+	}
+	return mySudoku
+}
+
 func (s sudoku) getRow(rowID int) row {
 	return s[rowID]
 }
@@ -218,7 +231,7 @@ func (s sudoku) mapEligibleNumbers(rowID int, colID int, c chan cell) {
 	c <- cell{rowID: rowID, colID: colID, eligibleNumbers: eligibleNumsMap}
 }
 
-func (s sudoku) fillEligibleNumber(ec cell, c chan bool) {
+func (s sudoku) fillEligibleNumber(ec cell, c chan int) {
 	myMap := ec.eligibleNumbers
 	rowID := ec.rowID
 	colID := ec.colID
@@ -227,11 +240,9 @@ func (s sudoku) fillEligibleNumber(ec cell, c chan bool) {
 
 	if eligNum != 0 {
 		s[rowID][colID] = eligNum
-		c <- true
-		return
 	}
 
-	c <- false
+	c <- eligNum
 }
 
 func (s sudoku) unfilledCount() (unfilled int) {
@@ -323,15 +334,27 @@ func (r row) complete() bool {
 
 func (en EligibleNumbers) getSingularEligibleNumber() (eligNum int) {
 	eligNumCount := 0
+	falseCount := 0
+
 	for key, val := range en {
 		if val {
 			eligNumCount++
 			eligNum = key
+		} else {
+			falseCount++
 		}
 	}
+
+	// If exactly one number is eligible, send the corresponding number
 	if eligNumCount == 1 {
 		return eligNum
 	}
 
+	// If no numbers are eligible, then send a different signal -1
+	if falseCount == 9 {
+		return -1
+	}
+
+	// If more than one number is eligible, send 0
 	return 0
 }

@@ -1,9 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // Take an unsolved sudoku input and return a solved sudoku output
-func solve(sudokuIn sudoku) (sudokuOut sudoku, solved bool, err error) {
+func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, err error) {
 
 	/*
 		Solve the sudoku puzzle as follows:
@@ -26,9 +29,19 @@ func solve(sudokuIn sudoku) (sudokuOut sudoku, solved bool, err error) {
 	unfilledCount := 0
 	iteration := 0
 
+	if iter != nil {
+		iteration = iter[0]
+	}
+
+	fmt.Println("<<<Iteration: ", iteration)
+
 	for {
 		// If the sudoku is solved, exit out of the routine
 		if sudokuOut.solved() {
+			break
+		}
+
+		if iteration >= 1000 {
 			break
 		}
 
@@ -50,20 +63,48 @@ func solve(sudokuIn sudoku) (sudokuOut sudoku, solved bool, err error) {
 
 		// call reduce/fill function concurrently for all the cells
 		for _, _cell := range mapResults {
-			c := make(chan bool)
+			c := make(chan int)
 			go sudokuOut.fillEligibleNumber(_cell, c)
 			myResult := <-c
-			if myResult {
-				fmt.Println(_cell.rowID, _cell.colID, myResult)
+			if myResult == -1 {
+				fmt.Println("incorrect sudoku")
+				return sudokuOut, sudokuOut.solved(), errors.New("incorrect sudoku")
 			}
 		}
 
 		// If no cells have been reduced, there is no point in repeating, start brute force
 		if sudokuOut.unfilledCount() >= unfilledCount {
-			fmt.Println("giving up!")
-			break
+			// fmt.Println("start brute force attack")
+			breakLoop := false
+			for _, _cell := range mapResults {
+				// Pick each eligible number, fill it and see if it works
+				for eligNum, val := range _cell.eligibleNumbers {
+					if val {
+						sudokuCopy := sudokuOut.copy()
+
+						sudokuOut[_cell.rowID][_cell.colID] = eligNum
+						_, _solved, _err := solve(sudokuOut, iteration)
+
+						if _solved || _err == nil {
+							breakLoop = true
+						} else {
+							if _err != nil && _err.Error() == "incorrect sudoku" {
+								// rollback the assignment and continue searching
+								sudokuOut = sudokuCopy.copy()
+							}
+						}
+					}
+
+					if breakLoop {
+						break
+					}
+				}
+
+				if breakLoop {
+					break
+				}
+			}
 		}
-		fmt.Println("iteration: ", iteration)
 	}
 
 	return sudokuOut, sudokuOut.solved(), nil

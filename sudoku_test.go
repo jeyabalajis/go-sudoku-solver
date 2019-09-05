@@ -217,4 +217,14 @@ func TestGetSingularEligibleNumber(t *testing.T) {
 		t.Errorf("Expected eligible number to be 0")
 	}
 
+	myMap = standardMap()
+	for key := range myMap {
+		myMap[key] = false
+	}
+
+	singVal = myMap.getSingularEligibleNumber()
+	if singVal != -1 {
+		t.Errorf("Expected no numbers to be eligible")
+	}
+
 }
