@@ -24,7 +24,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, err err
 		in the reducer, each concurrent thread will be working on non overlapping columns and fill up the cell
 	*/
 
-	sudokuOut = sudokuIn
+	sudokuOut = sudokuIn.copy()
 	mapResults := make([]cell, 0)
 	unfilledCount := 0
 	iteration := 0
@@ -32,8 +32,6 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, err err
 	if iter != nil {
 		iteration = iter[0]
 	}
-
-	fmt.Println("<<<Iteration: ", iteration)
 
 	for {
 		// If the sudoku is solved, exit out of the routine
@@ -45,28 +43,37 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, err err
 			break
 		}
 
+		if iteration%50 == 0 {
+			sudokuOut.print()
+		}
+
 		unfilledCount = sudokuOut.unfilledCount()
-		c := make(chan cell)
+
+		// cMap := make(chan cell)
+		// cReduce := make(chan int)
 
 		iteration++
 
+		fmt.Println("<<<Iteration>>>: ", iteration)
+
+		fmt.Println("map")
 		// call map function concurrently for all the cells
+		mapResults = make([]cell, 0)
 		for rowID, row := range sudokuOut {
 			for colID, col := range row {
 				if col == 0 {
-					go sudokuOut.mapEligibleNumbers(rowID, colID, c)
-					myCell := <-c
-					mapResults = append(mapResults, myCell)
+					_cell := sudokuOut.mapEligibleNumbers(rowID, colID)
+					mapResults = append(mapResults, _cell)
 				}
 			}
 		}
 
+		fmt.Println("reduce")
 		// call reduce/fill function concurrently for all the cells
 		for _, _cell := range mapResults {
-			c := make(chan int)
-			go sudokuOut.fillEligibleNumber(_cell, c)
-			myResult := <-c
-			if myResult == -1 {
+			fmt.Println(_cell)
+			_result := sudokuOut.fillEligibleNumber(_cell)
+			if _result == -1 {
 				fmt.Println("incorrect sudoku")
 				return sudokuOut, sudokuOut.solved(), errors.New("incorrect sudoku")
 			}
@@ -74,7 +81,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, err err
 
 		// If no cells have been reduced, there is no point in repeating, start brute force
 		if sudokuOut.unfilledCount() >= unfilledCount {
-			// fmt.Println("start brute force attack")
+			fmt.Println("start brute force attack")
 			breakLoop := false
 			for _, _cell := range mapResults {
 				// Pick each eligible number, fill it and see if it works
@@ -85,13 +92,17 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, err err
 						sudokuOut[_cell.rowID][_cell.colID] = eligNum
 						_, _solved, _err := solve(sudokuOut, iteration)
 
-						if _solved || _err == nil {
+						if _err != nil && _err.Error() == "incorrect sudoku" {
+							// rollback the assignment and continue searching
+							sudokuOut = sudokuCopy.copy()
+						}
+
+						if _solved {
 							breakLoop = true
-						} else {
-							if _err != nil && _err.Error() == "incorrect sudoku" {
-								// rollback the assignment and continue searching
-								sudokuOut = sudokuCopy.copy()
-							}
+						}
+
+						if _err == nil {
+							breakLoop = true
 						}
 					}
 

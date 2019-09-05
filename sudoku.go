@@ -226,23 +226,23 @@ func (s sudoku) getBoundedBox(rowID int, colID int) row {
 	return myBB
 }
 
-func (s sudoku) mapEligibleNumbers(rowID int, colID int, c chan cell) {
+func (s sudoku) mapEligibleNumbers(rowID int, colID int) cell {
 	eligibleNumsMap := s._GetEligibleMap(rowID, colID)
-	c <- cell{rowID: rowID, colID: colID, eligibleNumbers: eligibleNumsMap}
+	return cell{rowID: rowID, colID: colID, eligibleNumbers: eligibleNumsMap}
 }
 
-func (s sudoku) fillEligibleNumber(ec cell, c chan int) {
+func (s sudoku) fillEligibleNumber(ec cell) int {
 	myMap := ec.eligibleNumbers
 	rowID := ec.rowID
 	colID := ec.colID
 
 	eligNum := myMap.getSingularEligibleNumber()
 
-	if eligNum != 0 {
+	if eligNum >= 1 && eligNum <= 9 {
 		s[rowID][colID] = eligNum
 	}
 
-	c <- eligNum
+	return eligNum
 }
 
 func (s sudoku) unfilledCount() (unfilled int) {

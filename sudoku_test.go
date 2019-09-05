@@ -146,8 +146,7 @@ func TestMapEligibleNumbers(t *testing.T) {
 	mySudoku := newSudokuFromFile("tests/simple_2.txt")
 
 	c := make(chan cell)
-	go mySudoku.mapEligibleNumbers(3, 5, c)
-	myCell := <-c
+	myCell := mySudoku.mapEligibleNumbers(3, 5)
 
 	for _, val := range myCell.eligibleNumbers {
 		if val {
@@ -157,8 +156,7 @@ func TestMapEligibleNumbers(t *testing.T) {
 
 	mySudoku = newSudokuFromFile("tests/simple_1.txt")
 
-	go mySudoku.mapEligibleNumbers(0, 0, c)
-	myCell = <-c
+	myCell = mySudoku.mapEligibleNumbers(0, 0)
 
 	for index, val := range myCell.eligibleNumbers {
 		if val {
@@ -171,8 +169,7 @@ func TestMapEligibleNumbers(t *testing.T) {
 
 	mySudoku = newSudokuFromFile("tests/simple_1.txt")
 
-	go mySudoku.mapEligibleNumbers(0, 1, c)
-	myCell = <-c
+	myCell = mySudoku.mapEligibleNumbers(0, 1)
 
 	for index, val := range myCell.eligibleNumbers {
 		if val {
