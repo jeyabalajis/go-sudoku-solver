@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 )
 
 // Take an unsolved sudoku input and return a solved sudoku output
@@ -38,7 +37,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 
 		// If the sudoku is solved, exit out of the routine
 		if sudokuOut.solved() {
-			fmt.Println("sudoku solved!")
+			//fmt.Println("sudoku solved!")
 			break
 		}
 
@@ -53,7 +52,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 
 		iteration++
 
-		fmt.Println("<<<Iteration & unfilled>>>: ", iteration, sudokuOut.unfilledCount())
+		//fmt.Println("<<<Iteration & unfilled>>>: ", iteration, sudokuOut.unfilledCount())
 
 		// fmt.Scanln(&input)
 
@@ -65,7 +64,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 					_cell := sudokuOut.mapEligibleNumbers(rowID, colID)
 					_result := sudokuOut.fillEligibleNumber(_cell)
 					if _result == -1 {
-						fmt.Println("incorrect sudoku. return to caller")
+						//fmt.Println("incorrect sudoku. return to caller")
 						return sudokuOut, sudokuOut.solved(), iteration, errors.New("incorrect sudoku")
 					}
 				}
@@ -74,13 +73,13 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 
 		// If the sudoku is solved, exit out of the routine
 		if sudokuOut.solved() {
-			fmt.Println("sudoku solved!")
+			//fmt.Println("sudoku solved!")
 			break
 		}
 
 		// If no cells have been reduced, there is no point in repeating, start brute force
 		if sudokuOut.unfilledCount() >= unfilledCount {
-			fmt.Println("start brute force attack")
+			//fmt.Println("start brute force attack")
 
 			mapResults = make([]cell, 0)
 			for rowID, row := range sudokuOut {
@@ -97,7 +96,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 				// Pick each eligible number, fill it and see if it works
 				for eligNum, val := range _cell.eligibleNumbers {
 					if val {
-						fmt.Printf("try out value %v in index (%v, %v)", eligNum, _cell.rowID, _cell.colID)
+						// fmt.Printf("try out value %v in index (%v, %v)", eligNum, _cell.rowID, _cell.colID)
 						sudokuCopy := make(sudoku, len(sudokuOut))
 						copy(sudokuCopy, sudokuOut)
 
@@ -106,17 +105,17 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 						iteration = _iteration
 
 						if _solved {
-							fmt.Println("solved. return to caller")
+							//fmt.Println("solved. return to caller")
 							return sudokuInter, _solved, iteration, _err
 						}
 
 						if _err != nil {
-							fmt.Println("incorrect sudoku, try the next one")
+							//fmt.Println("incorrect sudoku, try the next one")
 							// rollback the assignment and continue searching
 							sudokuOut = make(sudoku, len(sudokuCopy))
 							copy(sudokuOut, sudokuCopy)
 						} else {
-							fmt.Println("not solved, but the guess is correct. try from beginning")
+							//fmt.Println("not solved, but the guess is correct. try from beginning")
 							sudokuOut = make(sudoku, len(sudokuCopy))
 							copy(sudokuOut, sudokuInter)
 							stopSearching = true
@@ -126,17 +125,17 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 					// sudokuOut.print()
 
 					if stopSearching {
-						// fmt.Println("break search")
+						// //fmt.Println("break search")
 						break
 					}
 				}
 
-				// fmt.Println("break search")
+				// //fmt.Println("break search")
 				break
 			}
 		}
 	}
 
-	fmt.Println("finally going back")
+	//fmt.Println("finally going back")
 	return sudokuOut, sudokuOut.solved(), iteration, nil
 }

@@ -145,7 +145,6 @@ func TestGetBoundexBox(t *testing.T) {
 func TestMapEligibleNumbers(t *testing.T) {
 	mySudoku := newSudokuFromFile("tests/simple_2.txt")
 
-	c := make(chan cell)
 	myCell := mySudoku.mapEligibleNumbers(3, 5)
 
 	for _, val := range myCell.eligibleNumbers {
