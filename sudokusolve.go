@@ -41,7 +41,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 			break
 		}
 
-		if iteration >= 1000000 {
+		if iteration >= 10000000 {
 			break
 		}
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestSplitString(t *testing.T) {
@@ -223,4 +224,21 @@ func TestGetSingularEligibleNumber(t *testing.T) {
 		t.Errorf("Expected no numbers to be eligible")
 	}
 
+}
+
+func TestSolve(t *testing.T) {
+	mySudoku := newSudokuFromFile("tests/hardest_3.txt")
+
+	mySudoku.print()
+	start := time.Now()
+	solvedSudoku, solved, iterations, err := solve(mySudoku)
+	elapsed := time.Since(start)
+	fmt.Println("solved:", solved)
+	fmt.Println("error:", err)
+	fmt.Println("total iterations: ", iterations)
+	fmt.Println("elapsed time: ", elapsed)
+	solvedSudoku.print()
+	if !solved {
+		t.Errorf("Expected sudoku to be solved")
+	}
 }
