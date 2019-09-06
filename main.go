@@ -3,12 +3,13 @@ package main
 import "fmt"
 
 func main() {
-	mySudoku := newSudokuFromFile("tests/hard_1.txt")
+	mySudoku := newSudokuFromFile("tests/hard_2.txt")
 
 	mySudoku.print()
-	solvedSudoku, solved, err := solve(mySudoku)
+	solvedSudoku, solved, iterations, err := solve(mySudoku)
 
+	fmt.Println("solved:", solved)
+	fmt.Println("error:", err)
+	fmt.Println("total iterations: ", iterations)
 	solvedSudoku.print()
-	fmt.Println(solved)
-	fmt.Println(err)
 }
