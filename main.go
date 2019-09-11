@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	mySudoku := newSudokuFromFile("tests/hardest_2.txt")
+	mySudoku := newSudokuFromFile("tests/hardest_1.txt")
 
 	mySudoku.print()
 	start := time.Now()

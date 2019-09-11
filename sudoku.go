@@ -17,6 +17,13 @@ type cell struct {
 	eligibleNumbers EligibleNumbers
 }
 
+type sudokuChannel struct {
+	intermediate sudoku
+	solved       bool
+	iteration    int
+	err          error
+}
+
 func _getBoundedBoxIndex(rowID int, colID int) int {
 	bbIndex := 0
 	switch {
@@ -231,7 +238,7 @@ func (s sudoku) mapEligibleNumbers(rowID int, colID int) cell {
 	return cell{rowID: rowID, colID: colID, eligibleNumbers: eligibleNumsMap}
 }
 
-func (s sudoku) fillEligibleNumber(ec cell) int {
+func (s sudoku) reduceAndFillEligibleNumber(ec cell) int {
 	myMap := ec.eligibleNumbers
 	rowID := ec.rowID
 	colID := ec.colID
@@ -240,11 +247,14 @@ func (s sudoku) fillEligibleNumber(ec cell) int {
 	eligNum := myMap.getSingularEligibleNumber()
 
 	if eligNum >= 1 && eligNum <= 9 {
-		// fmt.Println("filling ", rowID, colID, eligNum)
-		s[rowID][colID] = eligNum
+		s.fill(rowID, colID, eligNum)
 	}
 
 	return eligNum
+}
+
+func (s sudoku) fill(rowID int, colID int, val int) {
+	s[rowID][colID] = val
 }
 
 func (s sudoku) unfilledCount() (unfilled int) {
@@ -369,4 +379,14 @@ func (en EligibleNumbers) print() {
 		}
 	}
 	fmt.Println(ea)
+}
+
+func (en EligibleNumbers) getList() []int {
+	ea := make([]int, 0)
+	for key, val := range en {
+		if val {
+			ea = append(ea, key)
+		}
+	}
+	return ea
 }

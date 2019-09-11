@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"log"
+	"sync"
 )
 
 // Take an unsolved sudoku input and return a solved sudoku output
@@ -22,9 +24,8 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 
 		in the reducer, each concurrent thread will be working on non overlapping columns and fill up the cell
 	*/
-	// var input string
 	sudokuOut = sudokuIn.copy()
-	mapResults := make([]cell, 0)
+	// mapResults := make([]cell, 0)
 	unfilledCount := 0
 
 	if iter != nil {
@@ -32,6 +33,8 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 	} else {
 		iteration = 0
 	}
+
+	// fmt.Println(iteration)
 
 	for {
 
@@ -54,7 +57,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 
 		//fmt.Println("<<<Iteration & unfilled>>>: ", iteration, sudokuOut.unfilledCount())
 
-		// fmt.Scanln(&input)
+		// sudokuOut.print()
 
 		// call map function concurrently for all the cells
 		// mapResults = make([]cell, 0)
@@ -62,7 +65,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 			for colID, col := range row {
 				if col == 0 {
 					_cell := sudokuOut.mapEligibleNumbers(rowID, colID)
-					_result := sudokuOut.fillEligibleNumber(_cell)
+					_result := sudokuOut.reduceAndFillEligibleNumber(_cell)
 					if _result == -1 {
 						//fmt.Println("incorrect sudoku. return to caller")
 						return sudokuOut, sudokuOut.solved(), iteration, errors.New("incorrect sudoku")
@@ -81,61 +84,110 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 		if sudokuOut.unfilledCount() >= unfilledCount {
 			//fmt.Println("start brute force attack")
 
-			mapResults = make([]cell, 0)
+			potentials := make(map[int]cell)
 			for rowID, row := range sudokuOut {
 				for colID, col := range row {
 					if col == 0 {
 						_cell := sudokuOut.mapEligibleNumbers(rowID, colID)
-						mapResults = append(mapResults, _cell)
+						_potentialsLen := len(_cell.eligibleNumbers.getList())
+						potentials[_potentialsLen] = _cell
 					}
 				}
 			}
 
-			stopSearching := false
-			for _, _cell := range mapResults {
-				// Pick each eligible number, fill it and see if it works
-				for eligNum, val := range _cell.eligibleNumbers {
-					if val {
-						// fmt.Printf("try out value %v in index (%v, %v)", eligNum, _cell.rowID, _cell.colID)
-						sudokuCopy := make(sudoku, len(sudokuOut))
-						copy(sudokuCopy, sudokuOut)
+			// var input string
+			// fmt.Println(potentials)
+			// fmt.Scanln(&input)
 
-						sudokuOut[_cell.rowID][_cell.colID] = eligNum
-						sudokuInter, _solved, _iteration, _err := solve(sudokuOut, iteration)
-						iteration = _iteration
+			// Walk through all cells and group them by the number of potentials
+			var cellToEvaluate cell
+			potentialsRange := []int{2, 3, 4, 5, 6, 7, 8, 9}
+			for _, _potential := range potentialsRange {
+				if _, ok := potentials[_potential]; ok {
+					cellToEvaluate = potentials[_potential]
+					break
+				}
+			}
 
-						if _solved {
-							//fmt.Println("solved. return to caller")
-							return sudokuInter, _solved, iteration, _err
-						}
+			chanSudokuSolve := make(chan sudokuChannel)
+			wg := new(sync.WaitGroup)
 
-						if _err != nil {
-							//fmt.Println("incorrect sudoku, try the next one")
-							// rollback the assignment and continue searching
-							sudokuOut = make(sudoku, len(sudokuCopy))
-							copy(sudokuOut, sudokuCopy)
-						} else {
-							//fmt.Println("not solved, but the guess is correct. try from beginning")
-							sudokuOut = make(sudoku, len(sudokuCopy))
-							copy(sudokuOut, sudokuInter)
-							stopSearching = true
-						}
-					}
+			// Pick each eligible number, fill it and see if it works
+			for eligNum, eligible := range cellToEvaluate.eligibleNumbers {
 
-					// sudokuOut.print()
+				if eligible {
 
-					if stopSearching {
-						// //fmt.Println("break search")
-						break
-					}
+					sudokuOut.fill(cellToEvaluate.rowID, cellToEvaluate.colID, eligNum)
+
+					wg.Add(1)
+					go _solveWrapper(sudokuOut, 0, wg, &chanSudokuSolve)
+
+					// go _solveConcurrent(sudokuOut, chanSudokuSolve, iteration)
+
+					// r := <-chanSudokuSolve
+					// sudokuInter := r.intermediate
+					// _solved := r.solved
+					// _err := r.err
+					// iteration = iteration + r.iteration
+
+					// if _solved {
+					// 	//fmt.Println("solved. return to caller")
+					// 	return sudokuInter, _solved, iteration, _err
+					// }
+
+					// if _err != nil {
+					// 	// This combination is invalid. drop it
+					// } else {
+					// 	//fmt.Println("not solved, but the guess is correct. try from beginning")
+					// 	sudokuOut = make(sudoku, len(sudokuInter))
+					// 	copy(sudokuOut, sudokuInter)
+					// 	break
+					// }
+				}
+			}
+
+			go func(wg *sync.WaitGroup, c chan sudokuChannel) {
+				log.Println("waiting")
+				wg.Wait()
+				log.Println("done waiting")
+				close(c)
+			}(wg, chanSudokuSolve)
+
+			// wg.Wait()
+			// close(chanSudokuSolve)
+
+			// collect the results and look for the right guess
+			for r := range chanSudokuSolve {
+				sudokuInter := r.intermediate
+				_solved := r.solved
+				_err := r.err
+				iteration = iteration + r.iteration
+
+				if _solved {
+					//fmt.Println("solved. return to caller")
+					return sudokuInter, _solved, iteration, _err
 				}
 
-				// //fmt.Println("break search")
-				break
+				if _err != nil {
+					// This combination is invalid. drop it
+				} else {
+					//fmt.Println("not solved, but the guess is correct. try from beginning")
+					sudokuOut = make(sudoku, len(sudokuInter))
+					copy(sudokuOut, sudokuInter)
+					break
+				}
 			}
+
 		}
 	}
 
 	//fmt.Println("finally going back")
 	return sudokuOut, sudokuOut.solved(), iteration, nil
+}
+
+func _solveWrapper(sudokuIn sudoku, iter int, wg *sync.WaitGroup, c *chan sudokuChannel) {
+	defer wg.Done()
+	sudokuInter, _solved, _iteration, _err := solve(sudokuIn, iter)
+	*c <- sudokuChannel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err}
+	log.Println("sent solution")
 }
