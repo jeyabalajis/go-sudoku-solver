@@ -18,6 +18,8 @@ type cell struct {
 }
 
 type sudokuChannel struct {
+	cellMutated  cell
+	valueOption  int
 	intermediate sudoku
 	solved       bool
 	iteration    int

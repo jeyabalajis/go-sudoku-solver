@@ -127,7 +127,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 					sudokuOut.fill(cellToEvaluate.rowID, cellToEvaluate.colID, eligNum)
 
 					wg.Add(1)
-					go _solveWrapper(sudokuOut, 0, wg, &chanSudokuSolve)
+					go _solveWrapper(sudokuOut, 0, cellToEvaluate, eligNum, wg, &chanSudokuSolve)
 
 					// go _solveConcurrent(sudokuOut, chanSudokuSolve, iteration)
 
@@ -164,14 +164,18 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 			// close(chanSudokuSolve)
 
 			// collect the results and look for the right guess
+			log.Println("look at the results")
 			for r := range chanSudokuSolve {
 				sudokuInter := r.intermediate
 				_solved := r.solved
 				_err := r.err
 				iteration = iteration + r.iteration
+				_cell := r.cellMutated
+				_valueOption := r.valueOption
 
+				log.Println(_cell.rowID, _cell.colID, _valueOption, _solved, _err.Error())
 				if _solved {
-					//fmt.Println("solved. return to caller")
+					// fmt.Println("solved. return to caller")
 					return sudokuInter, _solved, iteration, _err
 				}
 
@@ -192,9 +196,9 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 	return sudokuOut, sudokuOut.solved(), iteration, errors.New("done")
 }
 
-func _solveWrapper(sudokuIn sudoku, iter int, wg *sync.WaitGroup, c *chan sudokuChannel) {
+func _solveWrapper(sudokuIn sudoku, iter int, cE cell, mutatedValue int, wg *sync.WaitGroup, c *chan sudokuChannel) {
 	defer wg.Done()
 	sudokuInter, _solved, _iteration, _err := solve(sudokuIn, iter)
-	*c <- sudokuChannel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err}
+	*c <- sudokuChannel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err, cellMutated: cE, valueOption: mutatedValue}
 	log.Println("sent solution")
 }
