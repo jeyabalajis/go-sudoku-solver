@@ -7,7 +7,7 @@ import (
 )
 
 // Take an unsolved sudoku input and return a solved sudoku output
-func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iteration int, err error) {
+func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
 
 	/*
 		Solve the sudoku puzzle as follows:
@@ -19,19 +19,19 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 			pick the cell with the least number of potentials:
 			fire multiple threads concurrently with each of these potentials filled in the cell
 			do this recursively.
-
 			I.e. once a cell is filled with a potential, a recursive call is made to solve function,
 			which fills the next potential and so on. There can be only one of two outcomes at the top most level:
 			(a) the sudoku is solved
 			(b) this combination is invalid, in which case, this guess is abandoned
-
 			at intermediate levels, there can be one of two outcomes:
 			(a) the sudoku is partially solved, in which case, this guessing comtinues
 			(b) this combination is invalid, in which case, this guess is abandoned
-
 	*/
 
-	sudokuOut = sudokuIn.copy()
+	var iteration int
+	sudokuOut := make(sudoku, len(sudokuIn))
+	copy(sudokuOut, sudokuIn)
+
 	// mapResults := make([]cell, 0)
 	unfilledCount := 0
 
@@ -116,37 +116,78 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 				}
 			}
 
+			chanSudokuSolve := make(chan sudokuChannel)
+			wg := new(sync.WaitGroup)
+
 			// Pick each eligible number, fill it and see if it works
 			for eligNum, eligible := range cellToEvaluate.eligibleNumbers {
 
 				if eligible {
 
-					sudokuCopy := make(sudoku, len(sudokuOut))
-					copy(sudokuCopy, sudokuCopy)
+					// sudokuOut.fill(cellToEvaluate.rowID, cellToEvaluate.colID, eligNum)
 
-					sudokuOut.fill(cellToEvaluate.rowID, cellToEvaluate.colID, eligNum)
+					wg.Add(1)
 
-					_sudokuInter, _solved, _iteration, _err := solve(sudokuOut, iteration)
+					_sudokuTemp := make(sudoku, len(sudokuOut))
+					copy(_sudokuTemp, sudokuOut)
+					go _solveWrapper(_sudokuTemp, cellToEvaluate.rowID, cellToEvaluate.colID, eligNum, 0, wg, &chanSudokuSolve)
 
-					if _solved {
-						// fmt.Println("solved. return to caller")
-						return _sudokuInter, _solved, _iteration, _err
-					}
+					// go _solveConcurrent(sudokuOut, chanSudokuSolve, iteration)
 
-					if _err.Error() == "incorrect sudoku" {
-						// This combination is invalid. rollback. try out the next option
-						sudokuOut := make(sudoku, len(sudokuCopy))
-						copy(sudokuOut, sudokuCopy)
-					} else {
-						//fmt.Println("not solved, but the guess is correct. try from beginning")
-						sudokuOut = make(sudoku, len(_sudokuInter))
-						copy(sudokuOut, _sudokuInter)
-						sudokuOut.print()
-						break
-					}
+					// r := <-chanSudokuSolve
+					// sudokuInter := r.intermediate
+					// _solved := r.solved
+					// _err := r.err
+					// iteration = iteration + r.iteration
 
+					// if _solved {
+					// 	//fmt.Println("solved. return to caller")
+					// 	return sudokuInter, _solved, iteration, _err
+					// }
+
+					// if _err != nil {
+					// 	// This combination is invalid. drop it
+					// } else {
+					// 	//fmt.Println("not solved, but the guess is correct. try from beginning")
+					// 	sudokuOut = make(sudoku, len(sudokuInter))
+					// 	copy(sudokuOut, sudokuInter)
+					// 	break
+					// }
 				}
 			}
+
+			go func(wg *sync.WaitGroup, c chan sudokuChannel) {
+				log.Println("waiting")
+				wg.Wait()
+				log.Println("done waiting")
+				close(c)
+			}(wg, chanSudokuSolve)
+
+			// wg.Wait()
+			// close(chanSudokuSolve)
+
+			// collect the results and look for the right guess
+			for r := range chanSudokuSolve {
+				sudokuInter := r.intermediate
+				_solved := r.solved
+				_err := r.err
+				iteration = iteration + r.iteration
+
+				if _solved {
+					//fmt.Println("solved. return to caller")
+					return sudokuInter, _solved, iteration, _err
+				}
+
+				if _err.Error() == "incorrect sudoku" {
+					// This combination is invalid. drop it
+				} else {
+					//fmt.Println("not solved, but the guess is correct. try from beginning")
+					sudokuOut = make(sudoku, len(sudokuInter))
+					copy(sudokuOut, sudokuInter)
+					break
+				}
+			}
+
 		}
 	}
 
@@ -154,9 +195,20 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 	return sudokuOut, sudokuOut.solved(), iteration, errors.New("done")
 }
 
-func _solveWrapper(sudokuIn sudoku, iter int, cE cell, mutatedValue int, wg *sync.WaitGroup, c *chan sudokuChannel) {
+func _solveWrapper(sudokuIn sudoku, rowID int, colID int, fillVal int, iter int, wg *sync.WaitGroup, c *chan sudokuChannel) {
 	defer wg.Done()
-	sudokuInter, _solved, _iteration, _err := solve(sudokuIn, iter)
-	*c <- sudokuChannel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err, cellMutated: cE, valueOption: mutatedValue}
+
+	_sudokuOut := make(sudoku, len(sudokuIn))
+	copy(_sudokuOut, sudokuIn)
+
+	done := make(chan struct{})
+	go func() {
+		_sudokuOut[rowID][colID] = fillVal
+		done <- struct{}{}
+	}()
+	<-done
+
+	sudokuInter, _solved, _iteration, _err := solve(_sudokuOut, iter)
+	*c <- sudokuChannel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err}
 	log.Println("sent solution")
 }

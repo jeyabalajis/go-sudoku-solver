@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 type row []int
 type sudoku []row
@@ -256,17 +259,36 @@ func (s sudoku) reduceAndFillEligibleNumber(ec cell) int {
 }
 
 func (s sudoku) fill(rowID int, colID int, val int) {
-	s[rowID][colID] = val
+	done := make(chan struct{})
+
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go func(s sudoku) {
+		s[rowID][colID] = val
+		done <- struct{}{}
+		wg.Done()
+	}(s)
+
+	<-done
+
+	wg.Wait()
 }
 
 func (s sudoku) unfilledCount() (unfilled int) {
-	for _, row := range s {
-		for _, col := range row {
-			if col == 0 {
-				unfilled++
+	done := make(chan struct{})
+
+	go func() {
+		for _, row := range s {
+			for _, col := range row {
+				if col == 0 {
+					unfilled++
+				}
 			}
 		}
-	}
+		done <- struct{}{}
+	}()
+
+	<-done
 	return unfilled
 }
 
