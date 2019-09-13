@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"testing"
@@ -240,5 +241,16 @@ func TestSolve(t *testing.T) {
 	solvedSudoku.print()
 	if !solved {
 		t.Errorf("Expected sudoku to be solved")
+	}
+}
+
+func TestErrValidate(t *testing.T) {
+	myErr := errors.New("incorrect sudoku")
+
+	fmt.Println(myErr)
+	if myErr.Error() == "incorrect sudoku" {
+
+	} else {
+		t.Errorf("Expected the error to match")
 	}
 }

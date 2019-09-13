@@ -14,16 +14,23 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 		1) mapper: find out potential numbers that can be filled for each unfilled column in each row by
 			looking at the unfilled column from the perspective of the corresponding row, column and the bounded box
 		2) reducer: scan through the row, column or bounding box and resolve the column value
-		3) repeat step 1 and 2 until sudoku is fully solved or the program completes 100000 tries, whichever comes first
+		3) repeat step 1 and 2 as long as the number of unfilled reduces in each iteration
+		4) If the unfilled cells are not reducing anymore, do the following
+			pick the cell with the least number of potentials:
+			fire multiple threads concurrently with each of these potentials filled in the cell
+			do this recursively.
 
-		concurrency:
-		fire up mapper for all 81 columns concurrently since nothing is going to be filled. Just the eligible numbers
-		would be mapped in this run for the column passed.
+			I.e. once a cell is filled with a potential, a recursive call is made to solve function,
+			which fills the next potential and so on. There can be only one of two outcomes at the top most level:
+			(a) the sudoku is solved
+			(b) this combination is invalid, in which case, this guess is abandoned
 
-		fire up reducer for all 81 columns concurrently to fill up the cell if there is a singular eligible number
+			at intermediate levels, there can be one of two outcomes:
+			(a) the sudoku is partially solved, in which case, this guessing comtinues
+			(b) this combination is invalid, in which case, this guess is abandoned
 
-		in the reducer, each concurrent thread will be working on non overlapping columns and fill up the cell
 	*/
+
 	sudokuOut = sudokuIn.copy()
 	// mapResults := make([]cell, 0)
 	unfilledCount := 0
@@ -168,7 +175,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 					return sudokuInter, _solved, iteration, _err
 				}
 
-				if _err != nil {
+				if _err.Error() == "incorrect sudoku" {
 					// This combination is invalid. drop it
 				} else {
 					//fmt.Println("not solved, but the guess is correct. try from beginning")
@@ -182,7 +189,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 	}
 
 	//fmt.Println("finally going back")
-	return sudokuOut, sudokuOut.solved(), iteration, nil
+	return sudokuOut, sudokuOut.solved(), iteration, errors.New("done")
 }
 
 func _solveWrapper(sudokuIn sudoku, iter int, wg *sync.WaitGroup, c *chan sudokuChannel) {
