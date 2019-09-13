@@ -118,79 +118,37 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 				}
 			}
 
-			chanSudokuSolve := make(chan sudokuChannel)
-			wg := new(sync.WaitGroup)
-
 			// Pick each eligible number, fill it and see if it works
 			for eligNum, eligible := range cellToEvaluate.eligibleNumbers {
 
 				if eligible {
 
+					sudokuCopy := make(sudoku, len(sudokuOut))
+					copy(sudokuCopy, sudokuCopy)
+
 					sudokuOut.fill(cellToEvaluate.rowID, cellToEvaluate.colID, eligNum)
 
-					wg.Add(1)
-					go _solveWrapper(sudokuOut, 0, cellToEvaluate, eligNum, wg, &chanSudokuSolve)
+					_sudokuInter, _solved, _iteration, _err := solve(sudokuOut, iteration)
 
-					// go _solveConcurrent(sudokuOut, chanSudokuSolve, iteration)
+					if _solved {
+						// fmt.Println("solved. return to caller")
+						return _sudokuInter, _solved, _iteration, _err
+					}
 
-					// r := <-chanSudokuSolve
-					// sudokuInter := r.intermediate
-					// _solved := r.solved
-					// _err := r.err
-					// iteration = iteration + r.iteration
+					if _err.Error() == "incorrect sudoku" {
+						// This combination is invalid. rollback. try out the next option
+						sudokuOut := make(sudoku, len(sudokuCopy))
+						copy(sudokuOut, sudokuCopy)
+					} else {
+						//fmt.Println("not solved, but the guess is correct. try from beginning")
+						sudokuOut = make(sudoku, len(_sudokuInter))
+						copy(sudokuOut, _sudokuInter)
+						sudokuOut.print()
+						break
+					}
 
-					// if _solved {
-					// 	//fmt.Println("solved. return to caller")
-					// 	return sudokuInter, _solved, iteration, _err
-					// }
-
-					// if _err != nil {
-					// 	// This combination is invalid. drop it
-					// } else {
-					// 	//fmt.Println("not solved, but the guess is correct. try from beginning")
-					// 	sudokuOut = make(sudoku, len(sudokuInter))
-					// 	copy(sudokuOut, sudokuInter)
-					// 	break
-					// }
 				}
 			}
-
-			go func(wg *sync.WaitGroup, c chan sudokuChannel) {
-				log.Println("waiting")
-				wg.Wait()
-				log.Println("done waiting")
-				close(c)
-			}(wg, chanSudokuSolve)
-
-			// wg.Wait()
-			// close(chanSudokuSolve)
-
-			// collect the results and look for the right guess
-			log.Println("look at the results")
-			for r := range chanSudokuSolve {
-				sudokuInter := r.intermediate
-				_solved := r.solved
-				_err := r.err
-				iteration = iteration + r.iteration
-				_cell := r.cellMutated
-				_valueOption := r.valueOption
-
-				log.Println(_cell.rowID, _cell.colID, _valueOption, _solved, _err.Error())
-				if _solved {
-					// fmt.Println("solved. return to caller")
-					return sudokuInter, _solved, iteration, _err
-				}
-
-				if _err.Error() == "incorrect sudoku" {
-					// This combination is invalid. drop it
-				} else {
-					//fmt.Println("not solved, but the guess is correct. try from beginning")
-					sudokuOut = make(sudoku, len(sudokuInter))
-					copy(sudokuOut, sudokuInter)
-					break
-				}
-			}
-
 		}
 	}
 
