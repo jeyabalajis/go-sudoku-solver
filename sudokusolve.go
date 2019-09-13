@@ -31,7 +31,9 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 
 	*/
 
-	sudokuOut = sudokuIn.copy()
+	sudokuOut = make(sudoku, len(sudokuIn))
+	copy(sudokuOut, sudokuIn)
+
 	// mapResults := make([]cell, 0)
 	unfilledCount := 0
 
@@ -198,7 +200,10 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 
 func _solveWrapper(sudokuIn sudoku, iter int, cE cell, mutatedValue int, wg *sync.WaitGroup, c *chan sudokuChannel) {
 	defer wg.Done()
-	sudokuInter, _solved, _iteration, _err := solve(sudokuIn, iter)
+	sudokuOut := make(sudoku, len(sudokuIn))
+	copy(sudokuOut, sudokuIn)
+
+	sudokuInter, _solved, _iteration, _err := solve(sudokuOut, iter)
 	*c <- sudokuChannel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err, cellMutated: cE, valueOption: mutatedValue}
 	log.Println("sent solution")
 }
