@@ -2,9 +2,11 @@ package main
 
 import (
 	"errors"
-	"log"
 	"sync"
+	"sync/atomic"
 )
+
+var globalCounter = new(int32)
 
 // Take an unsolved sudoku input and return a solved sudoku output
 func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
@@ -29,8 +31,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
 	*/
 
 	var iteration int
-	sudokuOut := make(sudoku, len(sudokuIn))
-	copy(sudokuOut, sudokuIn)
+	sudokuOut := sudokuIn.copy()
 
 	// mapResults := make([]cell, 0)
 	unfilledCount := 0
@@ -60,7 +61,8 @@ func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
 		// cMap := make(chan cell)
 		// cReduce := make(chan int)
 
-		iteration++
+		// iteration++
+		iteration = int(atomic.AddInt32(globalCounter, 1))
 
 		//fmt.Println("<<<Iteration & unfilled>>>: ", iteration, sudokuOut.unfilledCount())
 
@@ -128,38 +130,13 @@ func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
 
 					wg.Add(1)
 
-					_sudokuTemp := make(sudoku, len(sudokuOut))
-					copy(_sudokuTemp, sudokuOut)
-					go _solveWrapper(_sudokuTemp, cellToEvaluate.rowID, cellToEvaluate.colID, eligNum, 0, wg, &chanSudokuSolve)
+					go _solveWrapper(sudokuOut, cellToEvaluate.rowID, cellToEvaluate.colID, eligNum, 0, wg, &chanSudokuSolve)
 
-					// go _solveConcurrent(sudokuOut, chanSudokuSolve, iteration)
-
-					// r := <-chanSudokuSolve
-					// sudokuInter := r.intermediate
-					// _solved := r.solved
-					// _err := r.err
-					// iteration = iteration + r.iteration
-
-					// if _solved {
-					// 	//fmt.Println("solved. return to caller")
-					// 	return sudokuInter, _solved, iteration, _err
-					// }
-
-					// if _err != nil {
-					// 	// This combination is invalid. drop it
-					// } else {
-					// 	//fmt.Println("not solved, but the guess is correct. try from beginning")
-					// 	sudokuOut = make(sudoku, len(sudokuInter))
-					// 	copy(sudokuOut, sudokuInter)
-					// 	break
-					// }
 				}
 			}
 
 			go func(wg *sync.WaitGroup, c chan sudokuChannel) {
-				log.Println("waiting")
 				wg.Wait()
-				log.Println("done waiting")
 				close(c)
 			}(wg, chanSudokuSolve)
 
@@ -168,22 +145,21 @@ func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
 
 			// collect the results and look for the right guess
 			for r := range chanSudokuSolve {
-				sudokuInter := r.intermediate
+				_sudokuInter := r.intermediate
 				_solved := r.solved
 				_err := r.err
 				iteration = iteration + r.iteration
 
 				if _solved {
 					//fmt.Println("solved. return to caller")
-					return sudokuInter, _solved, iteration, _err
+					return _sudokuInter, _solved, iteration, _err
 				}
 
 				if _err.Error() == "incorrect sudoku" {
 					// This combination is invalid. drop it
 				} else {
 					//fmt.Println("not solved, but the guess is correct. try from beginning")
-					sudokuOut = make(sudoku, len(sudokuInter))
-					copy(sudokuOut, sudokuInter)
+					sudokuOut = _sudokuInter.copy()
 					break
 				}
 			}
@@ -198,17 +174,10 @@ func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
 func _solveWrapper(sudokuIn sudoku, rowID int, colID int, fillVal int, iter int, wg *sync.WaitGroup, c *chan sudokuChannel) {
 	defer wg.Done()
 
-	_sudokuOut := make(sudoku, len(sudokuIn))
-	copy(_sudokuOut, sudokuIn)
+	_sudokuOut := sudokuIn.copy()
 
-	done := make(chan struct{})
-	go func() {
-		_sudokuOut[rowID][colID] = fillVal
-		done <- struct{}{}
-	}()
-	<-done
+	_sudokuOut.fill(rowID, colID, fillVal)
 
 	sudokuInter, _solved, _iteration, _err := solve(_sudokuOut, iter)
 	*c <- sudokuChannel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err}
-	log.Println("sent solution")
 }
