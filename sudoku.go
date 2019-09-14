@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type row []int
 type sudoku []row
@@ -185,16 +187,22 @@ func (s sudoku) solved() bool {
 	return true
 }
 
+// copy() is a deep copy solution for sudoku structure which is array of array of int
 func (s sudoku) copy() sudoku {
 	mySudoku := make(sudoku, 0)
+	done := make(chan struct{})
 
-	for _, _row := range s {
-		myRow := make(row, 0)
-		for _, _col := range _row {
-			myRow = append(myRow, _col)
+	go func() {
+		for _, _row := range s {
+			myRow := make(row, 0)
+			for _, _col := range _row {
+				myRow = append(myRow, _col)
+			}
+			mySudoku = append(mySudoku, myRow)
 		}
-		mySudoku = append(mySudoku, myRow)
-	}
+		done <- struct{}{}
+	}()
+	<-done
 	return mySudoku
 }
 
@@ -256,17 +264,31 @@ func (s sudoku) reduceAndFillEligibleNumber(ec cell) int {
 }
 
 func (s sudoku) fill(rowID int, colID int, val int) {
-	s[rowID][colID] = val
+	done := make(chan struct{})
+
+	go func(s sudoku) {
+		s[rowID][colID] = val
+		done <- struct{}{}
+	}(s)
+
+	<-done
 }
 
 func (s sudoku) unfilledCount() (unfilled int) {
-	for _, row := range s {
-		for _, col := range row {
-			if col == 0 {
-				unfilled++
+	done := make(chan struct{})
+
+	go func() {
+		for _, row := range s {
+			for _, col := range row {
+				if col == 0 {
+					unfilled++
+				}
 			}
 		}
-	}
+		done <- struct{}{}
+	}()
+
+	<-done
 	return unfilled
 }
 
