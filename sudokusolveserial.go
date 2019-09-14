@@ -5,7 +5,7 @@ import (
 )
 
 // Take an unsolved sudoku input and return a solved sudoku output
-func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iteration int, err error) {
+func solveSerial(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iteration int, err error) {
 
 	/*
 		Solve the sudoku puzzle as follows:
@@ -122,7 +122,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudokuOut sudoku, solved bool, iterati
 
 					sudokuOut.fill(cellToEvaluate.rowID, cellToEvaluate.colID, eligNum)
 
-					_sudokuInter, _solved, _iteration, _err := solve(sudokuOut, iteration)
+					_sudokuInter, _solved, _iteration, _err := solveSerial(sudokuOut, iteration)
 
 					if _solved {
 						// fmt.Println("solved. return to caller")
