@@ -9,7 +9,7 @@ import (
 var globalCounter = new(int32)
 
 // Take an unsolved sudoku input and return a solved sudoku output
-func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
+func solve(sudokuIn sudoku) (sudoku, bool, int, error) {
 
 	/*
 		Solve the sudoku puzzle as follows:
@@ -36,47 +36,32 @@ func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
 	// mapResults := make([]cell, 0)
 	unfilledCount := 0
 
-	if iter != nil {
-		iteration = iter[0]
-	} else {
-		iteration = 0
-	}
-
-	// fmt.Println(iteration)
-
 	for {
 
 		// If the sudoku is solved, exit out of the routine
 		if sudokuOut.solved() {
-			//fmt.Println("sudoku solved!")
-			break
-		}
-
-		if iteration >= 10000000 {
 			break
 		}
 
 		unfilledCount = sudokuOut.unfilledCount()
 
-		// cMap := make(chan cell)
-		// cReduce := make(chan int)
-
 		// iteration++
 		iteration = int(atomic.AddInt32(globalCounter, 1))
 
-		//fmt.Println("<<<Iteration & unfilled>>>: ", iteration, sudokuOut.unfilledCount())
+		if iteration >= 10000000 {
+			break
+		}
 
-		// sudokuOut.print()
-
-		// call map function concurrently for all the cells
-		// mapResults = make([]cell, 0)
+		// run across all cells and perform map reduce
+		// cells with a single potential will end up getting filled
 		for rowID, row := range sudokuOut {
 			for colID, col := range row {
 				if col == 0 {
 					_cell := sudokuOut.mapEligibleNumbers(rowID, colID)
 					_result := sudokuOut.reduceAndFillEligibleNumber(_cell)
 					if _result == -1 {
-						//fmt.Println("incorrect sudoku. return to caller")
+						// incorrect sudoku. return to caller
+						// this scenario occurs when solve is called recursively with a guess
 						return sudokuOut, sudokuOut.solved(), iteration, errors.New("incorrect sudoku")
 					}
 				}
@@ -85,14 +70,12 @@ func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
 
 		// If the sudoku is solved, exit out of the routine
 		if sudokuOut.solved() {
-			//fmt.Println("sudoku solved!")
 			break
 		}
 
-		// If no cells have been reduced, there is no point in repeating, start brute force
+		// If no cells have been reduced, there is no point in repeating
+		// Map eligible numbers for each cell and pick a cell with the least number of eligible numbers
 		if sudokuOut.unfilledCount() >= unfilledCount {
-			//fmt.Println("start brute force attack")
-
 			potentials := make(map[int]cell)
 			for rowID, row := range sudokuOut {
 				for colID, col := range row {
@@ -104,11 +87,7 @@ func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
 				}
 			}
 
-			// var input string
-			// fmt.Println(potentials)
-			// fmt.Scanln(&input)
-
-			// Walk through all cells and group them by the number of potentials
+			// Walk through all cells and pick the cell with the least number of eligible numbers
 			var cellToEvaluate cell
 			potentialsRange := []int{2, 3, 4, 5, 6, 7, 8, 9}
 			for _, _potential := range potentialsRange {
@@ -118,30 +97,35 @@ func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
 				}
 			}
 
+			// Pick each eligible number, fill it and see if it works
+			// Do this CONCURRENTLY to save time
 			chanSudokuSolve := make(chan sudokuChannel)
 			wg := new(sync.WaitGroup)
 
-			// Pick each eligible number, fill it and see if it works
 			for eligNum, eligible := range cellToEvaluate.eligibleNumbers {
 
 				if eligible {
-
-					// sudokuOut.fill(cellToEvaluate.rowID, cellToEvaluate.colID, eligNum)
-
 					wg.Add(1)
 
-					go _solveWrapper(sudokuOut, cellToEvaluate.rowID, cellToEvaluate.colID, eligNum, 0, wg, &chanSudokuSolve)
+					// Call the solve function recursively, but as a go routine thread so that it executes asynchronously
+					go func(sudokuIn sudoku, rowID int, colID int, fillVal int, wg *sync.WaitGroup, c *chan sudokuChannel) {
+						defer wg.Done()
 
+						_sudokuOut := sudokuIn.copy()
+
+						_sudokuOut.fill(rowID, colID, fillVal)
+
+						sudokuInter, _solved, _iteration, _err := solve(_sudokuOut)
+						*c <- sudokuChannel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err}
+					}(sudokuOut, cellToEvaluate.rowID, cellToEvaluate.colID, eligNum, wg, &chanSudokuSolve)
 				}
 			}
 
+			// wait for the threads to be done & close channel once all threads are done
 			go func(wg *sync.WaitGroup, c chan sudokuChannel) {
 				wg.Wait()
 				close(c)
 			}(wg, chanSudokuSolve)
-
-			// wg.Wait()
-			// close(chanSudokuSolve)
 
 			// collect the results and look for the right guess
 			for r := range chanSudokuSolve {
@@ -151,14 +135,13 @@ func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
 				iteration = iteration + r.iteration
 
 				if _solved {
-					//fmt.Println("solved. return to caller")
 					return _sudokuInter, _solved, iteration, _err
 				}
 
 				if _err.Error() == "incorrect sudoku" {
 					// This combination is invalid. drop it
 				} else {
-					//fmt.Println("not solved, but the guess is correct. try from beginning")
+					// not solved, but the guess is correct. try from beginning
 					sudokuOut = _sudokuInter.copy()
 					break
 				}
@@ -167,17 +150,5 @@ func solve(sudokuIn sudoku, iter ...int) (sudoku, bool, int, error) {
 		}
 	}
 
-	//fmt.Println("finally going back")
 	return sudokuOut, sudokuOut.solved(), iteration, errors.New("done")
-}
-
-func _solveWrapper(sudokuIn sudoku, rowID int, colID int, fillVal int, iter int, wg *sync.WaitGroup, c *chan sudokuChannel) {
-	defer wg.Done()
-
-	_sudokuOut := sudokuIn.copy()
-
-	_sudokuOut.fill(rowID, colID, fillVal)
-
-	sudokuInter, _solved, _iteration, _err := solve(_sudokuOut, iter)
-	*c <- sudokuChannel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err}
 }

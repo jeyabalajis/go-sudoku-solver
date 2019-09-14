@@ -9,8 +9,8 @@
 8 [5 2 0 0 0 0 0 0 0]
 solved: true
 error: done
-total iterations:  875209
-elapsed time:  3.108419636s
+total iterations:  12529708
+elapsed time:  32.544014981s
 0 [6 7 2 9 8 3 4 5 1]
 1 [9 5 1 4 7 6 8 2 3]
 2 [3 8 4 2 1 5 9 7 6]
