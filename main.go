@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	mySudoku := newSudokuFromFile("tests/hardest_3.txt")
+	mySudoku := newSudokuFromFile("tests/hardest_4.txt")
 
 	mySudoku.print()
 	// log.Println("start filling")
