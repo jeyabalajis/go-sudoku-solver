@@ -8,19 +8,24 @@ import (
 
 var globalCounter = new(int32)
 
-// Take an unsolved Sudoku input and return a solved Sudoku output
-func solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
+// Solve takes an unsolved sudoku and solves it. It returns a Sudoku, whether it is solved or not, total number of iterations and error.
+// The error can either have a message done, which means everythingno error (or) an actual error message
+func Solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 
 	/*
 		Solve the Sudoku puzzle as follows:
+		Perform the following for each cell of the sudoku puzzle
 		1) mapper: find out potential numbers that can be filled for each unfilled column in each row by
 			looking at the unfilled column from the perspective of the corresponding row, column and the bounded box
 		2) reducer: scan through the row, column or bounding box and resolve the column value
 		3) repeat step 1 and 2 as long as the number of unfilled reduces in each iteration
-		4) If the unfilled cells are not reducing anymore, do the following
-			pick the cell with the least number of potentials:
-			fire multiple threads concurrently with each of these potentials filled in the cell
-			do this recursively.
+
+
+		If the unfilled cells are not reducing anymore, do the following
+
+		1. Pick the cell with the least number of potentials:
+		2. Fire multiple threads concurrently with each of these potentials filled in the cell.
+			Do this recursively.
 			I.e. once a cell is filled with a potential, a recursive call is made to solve function,
 			which fills the next potential and so on. There can be only one of two outcomes at the top most level:
 			(a) the Sudoku is solved
@@ -33,12 +38,10 @@ func solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 	var iteration int
 	SudokuOut := sudokuIn.Copy()
 
-	// mapResults := make([]cell, 0)
 	unfilledCount := 0
 
 	for {
 
-		// If the Sudoku is solved, exit out of the routine
 		if SudokuOut.Solved() {
 			break
 		}
@@ -53,7 +56,7 @@ func solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 		}
 
 		// run across all cells and perform map reduce
-		// cells with a single potential will end up getting filled
+		// cells with a single potential number will end up getting filled
 		for rowID, row := range SudokuOut {
 			for colID, col := range row {
 				if col == 0 {
@@ -115,7 +118,7 @@ func solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 
 						_SudokuOut.Fill(rowID, colID, fillVal)
 
-						sudokuInter, _solved, _iteration, _err := solve(_SudokuOut)
+						sudokuInter, _solved, _iteration, _err := Solve(_SudokuOut)
 						*c <- Channel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err}
 					}(SudokuOut, cellToEvaluate.rowID, cellToEvaluate.colID, eligNum, wg, &chanSudokuSolve)
 				}
