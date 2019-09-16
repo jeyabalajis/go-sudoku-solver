@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	mySudoku := newSudokuFromFile("tests/hardest_4.txt")
+	mySudoku := NewSudokuFromFile("tests/hardest_4.txt")
 
 	mySudoku.print()
 	// log.Println("start filling")
@@ -49,7 +49,7 @@ func main() {
 	// }
 }
 
-func _fillWrapper(sudokuIn sudoku, rowID int, colID int, fillVal int, wg *sync.WaitGroup, c *chan sudokuChannel) {
+func _fillWrapper(sudokuIn Sudoku, rowID int, colID int, fillVal int, wg *sync.WaitGroup, c *chan sudokuChannel) {
 	defer wg.Done()
 
 	_sudokuOut := sudokuIn.copy()
