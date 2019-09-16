@@ -1,12 +1,15 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"log"
+	"sync"
 	"time"
 )
 
 func main() {
-	mySudoku := newSudokuFromFile("tests/hardest_3.txt")
+	mySudoku := NewSudokuFromFile("tests/hardest_4.txt")
 
 	mySudoku.print()
 	// log.Println("start filling")
@@ -44,4 +47,20 @@ func main() {
 	// 	_sudokuInter.print()
 	// 	fmt.Println("*****")
 	// }
+}
+
+func _fillWrapper(sudokuIn Sudoku, rowID int, colID int, fillVal int, wg *sync.WaitGroup, c *chan sudokuChannel) {
+	defer wg.Done()
+
+	_sudokuOut := sudokuIn.copy()
+
+	done := make(chan struct{})
+	go func() {
+		_sudokuOut[rowID][colID] = fillVal
+		done <- struct{}{}
+	}()
+	<-done
+
+	*c <- sudokuChannel{intermediate: _sudokuOut, solved: true, iteration: 0, err: errors.New("done")}
+	log.Println("sent solution")
 }

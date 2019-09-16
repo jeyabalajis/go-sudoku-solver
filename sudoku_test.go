@@ -8,19 +8,8 @@ import (
 	"time"
 )
 
-func TestSplitString(t *testing.T) {
-	strSlice := splitString("0,0,0,2,6,0,7,0,1")
-	fmt.Println(strSlice)
-}
-
-func TestStringToRow(t *testing.T) {
-	strSlice := splitString("0,0,0,2,6,0,7,0,1")
-	myRow := _convertStringToRow(strSlice)
-	myRow.print()
-}
-
 func TestNewSudokuFromFile(t *testing.T) {
-	mySudoku := newSudokuFromFile("tests/simple_1.txt")
+	mySudoku := NewSudokuFromFile("tests/simple_1.txt")
 
 	if len(mySudoku) != 9 {
 		t.Errorf("Expected 9 rows, but got %d", len(mySudoku))

@@ -1,4 +1,4 @@
-package main
+package sudoku
 
 import (
 	"bufio"
@@ -10,11 +10,11 @@ import (
 )
 
 /*
-	Utility to convert a fixed file into a 9x9 sudoku
+	Utility to convert a fixed file into a 9x9 Sudoku
 */
 
-func _convertStringToRow(str []string) row {
-	var myRow row
+func _convertStringToRow(str []string) Row {
+	var myRow Row
 
 	for _, singleStr := range str {
 		intVal, err := strconv.Atoi(singleStr)
@@ -35,8 +35,9 @@ func splitString(str string) []string {
 	return strSlice
 }
 
-func newSudokuFromFile(fileName string) sudoku {
-	var mySudoku sudoku
+// NewSudokuFromFile reads the file with fileName from tests folder and converts it into a Sudoku
+func NewSudokuFromFile(fileName string) Sudoku {
+	var mySudoku Sudoku
 
 	file, err := os.Open(fileName)
 

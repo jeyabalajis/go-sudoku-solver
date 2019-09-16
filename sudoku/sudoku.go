@@ -1,28 +1,36 @@
-package main
+package sudoku
 
 import (
 	"fmt"
 )
 
-type row []int
-type sudoku []row
+// Row is a slice of integers. Used for representing a row, column or a bounded box of a sudoku of length 9
+type Row []int
+
+// Sudoku is a slice of Rows. Used for representing a sudoku puzzle, solved or otherwise
+type Sudoku []Row
 
 // EligibleNumbers - A Hashmap to keep track of which numbers are eligible to be filled in a column
 type EligibleNumbers map[int]bool
 
-const rowLength int = 9
-const colLength int = 9
+// RowLength is a constant that represents the length of a sudoku row
+const RowLength int = 9
 
-type cell struct {
+// ColLength is a constant that represents the length of a sudoku column
+const ColLength int = 9
+
+// Cell is a structure that contains a sudoku position (rowID, colid) and the eligible numbers that can be filled in it
+type Cell struct {
 	rowID           int
 	colID           int
 	eligibleNumbers EligibleNumbers
 }
 
-type sudokuChannel struct {
-	cellMutated  cell
+// Channel is a structure that is used to communicate the results of a solve run that is run concurrently
+type Channel struct {
+	cellMutated  Cell
 	valueOption  int
-	intermediate sudoku
+	intermediate Sudoku
 	solved       bool
 	iteration    int
 	err          error
@@ -75,110 +83,111 @@ func _getBoundedBoxIndex(rowID int, colID int) int {
 }
 
 func _getBoundedBoxBoundaries(rowID int, colID int) (int, int, int, int) {
-	var rowLowerBoundary int
-	var rowUpperBoundary int
+	var RowLowerBoundary int
+	var RowUpperBoundary int
 	var colLowerBoundary int
 	var colUpperBoundary int
 
 	switch {
 	case rowID <= 2 && colID <= 2:
-		rowLowerBoundary = 0
-		rowUpperBoundary = 2
+		RowLowerBoundary = 0
+		RowUpperBoundary = 2
 		colLowerBoundary = 0
 		colUpperBoundary = 2
 		break
 	case rowID <= 5 && colID <= 2:
-		rowLowerBoundary = 3
-		rowUpperBoundary = 5
+		RowLowerBoundary = 3
+		RowUpperBoundary = 5
 		colLowerBoundary = 0
 		colUpperBoundary = 2
 		break
 	case rowID <= 8 && colID <= 2:
-		rowLowerBoundary = 6
-		rowUpperBoundary = 8
+		RowLowerBoundary = 6
+		RowUpperBoundary = 8
 		colLowerBoundary = 0
 		colUpperBoundary = 2
 		break
 	case rowID <= 2 && colID <= 5:
-		rowLowerBoundary = 0
-		rowUpperBoundary = 2
+		RowLowerBoundary = 0
+		RowUpperBoundary = 2
 		colLowerBoundary = 3
 		colUpperBoundary = 5
 		break
 	case rowID <= 5 && colID <= 5:
-		rowLowerBoundary = 3
-		rowUpperBoundary = 5
+		RowLowerBoundary = 3
+		RowUpperBoundary = 5
 		colLowerBoundary = 3
 		colUpperBoundary = 5
 		break
 	case rowID <= 8 && colID <= 5:
-		rowLowerBoundary = 6
-		rowUpperBoundary = 8
+		RowLowerBoundary = 6
+		RowUpperBoundary = 8
 		colLowerBoundary = 3
 		colUpperBoundary = 5
 		break
 	case rowID <= 2 && colID <= 8:
-		rowLowerBoundary = 0
-		rowUpperBoundary = 2
+		RowLowerBoundary = 0
+		RowUpperBoundary = 2
 		colLowerBoundary = 6
 		colUpperBoundary = 8
 		break
 	case rowID <= 5 && colID <= 8:
-		rowLowerBoundary = 3
-		rowUpperBoundary = 5
+		RowLowerBoundary = 3
+		RowUpperBoundary = 5
 		colLowerBoundary = 6
 		colUpperBoundary = 8
 		break
 	case rowID <= 8 && colID <= 8:
-		rowLowerBoundary = 6
-		rowUpperBoundary = 8
+		RowLowerBoundary = 6
+		RowUpperBoundary = 8
 		colLowerBoundary = 6
 		colUpperBoundary = 8
 		break
 	}
 
-	return rowLowerBoundary, rowUpperBoundary, colLowerBoundary, colUpperBoundary
+	return RowLowerBoundary, RowUpperBoundary, colLowerBoundary, colUpperBoundary
 }
 
-func (s sudoku) solved() bool {
-	/*A sudoku is considered solved when
-	- there are no empty cells (i.e. cells with number zero)
-	- all rows, columns and bounded box contain numbers from 1 to 9 (i.e. complete)
-	- there are no repeating numbers in rows, columns or bounded box (i.e. nonRepeating)
+// Solved validates whether a sudoku is fully solved or not
+func (s Sudoku) Solved() bool {
+	/*A Sudoku is considered solved when
+	- there are no empty Cells (i.e. Cells with number zero)
+	- all Rows, columns and bounded box contain numbers from 1 to 9 (i.e. complete)
+	- there are no repeating numbers in Rows, columns or bounded box (i.e. nonRepeating)
 	*/
 
-	myColumns := make(map[int]row)
-	myBoundedBoxes := make(map[int]row)
+	myColumns := make(map[int]Row)
+	myBoundedBoxes := make(map[int]Row)
 
-	// traverse the sudoku once to collect rows, columns and bounded boxes
-	for rowID, row := range s {
+	// traverse the Sudoku once to collect Rows, columns and bounded boxes
+	for rowID, Row := range s {
 
-		if !(row.complete() && row.nonRepeating()) {
+		if !(Row.complete() && Row.nonRepeating()) {
 			return false
 		}
 
-		for colID, col := range row {
+		for colID, col := range Row {
 
-			// collect column values belonging to the same column id in a separate row
+			// collect column values belonging to the same column id in a separate Row
 			myColumns[colID] = append(myColumns[colID], col)
 
-			// collect column values belonging to the same bounded box into a separate row
+			// collect column values belonging to the same bounded box into a separate Row
 			bbID := _getBoundedBoxIndex(rowID, colID)
 			myBoundedBoxes[bbID] = append(myBoundedBoxes[bbID], col)
 		}
 	}
 
 	if len(myColumns) > 0 {
-		for _, row := range myColumns {
-			if !(row.complete() && row.nonRepeating()) {
+		for _, Row := range myColumns {
+			if !(Row.complete() && Row.nonRepeating()) {
 				return false
 			}
 		}
 	}
 
 	if len(myBoundedBoxes) > 0 {
-		for _, row := range myBoundedBoxes {
-			if !(row.complete() && row.nonRepeating()) {
+		for _, Row := range myBoundedBoxes {
+			if !(Row.complete() && Row.nonRepeating()) {
 				return false
 			}
 		}
@@ -187,15 +196,15 @@ func (s sudoku) solved() bool {
 	return true
 }
 
-// copy() is a deep copy solution for sudoku structure which is array of array of int
-func (s sudoku) copy() sudoku {
-	mySudoku := make(sudoku, 0)
+// Copy is a deep copy solution for Sudoku structure which is array of array of int
+func (s Sudoku) Copy() Sudoku {
+	mySudoku := make(Sudoku, 0)
 	done := make(chan struct{})
 
 	go func() {
-		for _, _row := range s {
-			myRow := make(row, 0)
-			for _, _col := range _row {
+		for _, _Row := range s {
+			myRow := make(Row, 0)
+			for _, _col := range _Row {
 				myRow = append(myRow, _col)
 			}
 			mySudoku = append(mySudoku, myRow)
@@ -206,15 +215,15 @@ func (s sudoku) copy() sudoku {
 	return mySudoku
 }
 
-func (s sudoku) getRow(rowID int) row {
+func (s Sudoku) getRow(rowID int) Row {
 	return s[rowID]
 }
 
-func (s sudoku) getColumn(colID int) row {
-	var myColumn row
+func (s Sudoku) getColumn(colID int) Row {
+	var myColumn Row
 
-	for _, row := range s {
-		for colIndex, col := range row {
+	for _, Row := range s {
+		for colIndex, col := range Row {
 			if colID == colIndex {
 				myColumn = append(myColumn, col)
 			}
@@ -223,19 +232,20 @@ func (s sudoku) getColumn(colID int) row {
 	return myColumn
 }
 
-func (s sudoku) print() {
+// Print prints the rows of a sudoku
+func (s Sudoku) Print() {
 	for i, col := range s {
 		fmt.Println(i, col)
 	}
 }
 
-func (s sudoku) getBoundedBox(rowID int, colID int) row {
-	var myBB row
-	rowMin, rowMax, colMin, colMax := _getBoundedBoxBoundaries(rowID, colID)
+func (s Sudoku) getBoundedBox(rowID int, colID int) Row {
+	var myBB Row
+	RowMin, RowMax, colMin, colMax := _getBoundedBoxBoundaries(rowID, colID)
 
-	for rowIndex, row := range s {
-		for colIndex, col := range row {
-			if (rowIndex >= rowMin && rowIndex <= rowMax) && (colIndex >= colMin && colIndex <= colMax) {
+	for RowIndex, Row := range s {
+		for colIndex, col := range Row {
+			if (RowIndex >= RowMin && RowIndex <= RowMax) && (colIndex >= colMin && colIndex <= colMax) {
 				myBB = append(myBB, col)
 			}
 		}
@@ -243,30 +253,33 @@ func (s sudoku) getBoundedBox(rowID int, colID int) row {
 	return myBB
 }
 
-func (s sudoku) mapEligibleNumbers(rowID int, colID int) cell {
-	eligibleNumsMap := s._GetEligibleMap(rowID, colID)
-	return cell{rowID: rowID, colID: colID, eligibleNumbers: eligibleNumsMap}
+// MapEligibleNumbers maps eligible numbers that can be filled for a particular position in a sudoku
+func (s Sudoku) MapEligibleNumbers(rowID int, colID int) Cell {
+	eligibleNumsMap := s._getEligibleMap(rowID, colID)
+	return Cell{rowID: rowID, colID: colID, eligibleNumbers: eligibleNumsMap}
 }
 
-func (s sudoku) reduceAndFillEligibleNumber(ec cell) int {
+// ReduceAndFillEligibleNumber updates a specific Cell if the Cell contains only one eligible number
+func (s Sudoku) ReduceAndFillEligibleNumber(ec Cell) int {
 	myMap := ec.eligibleNumbers
 	rowID := ec.rowID
 	colID := ec.colID
 
-	// ec.eligibleNumbers.print()
+	// ec.eligibleNumbers.Print()
 	eligNum := myMap.getSingularEligibleNumber()
 
 	if eligNum >= 1 && eligNum <= 9 {
-		s.fill(rowID, colID, eligNum)
+		s.Fill(rowID, colID, eligNum)
 	}
 
 	return eligNum
 }
 
-func (s sudoku) fill(rowID int, colID int, val int) {
+// Fill updates a particular cell, represented by rowID and colID with the value passed
+func (s Sudoku) Fill(rowID int, colID int, val int) {
 	done := make(chan struct{})
 
-	go func(s sudoku) {
+	go func(s Sudoku) {
 		s[rowID][colID] = val
 		done <- struct{}{}
 	}(s)
@@ -274,12 +287,13 @@ func (s sudoku) fill(rowID int, colID int, val int) {
 	<-done
 }
 
-func (s sudoku) unfilledCount() (unfilled int) {
+// UnfilledCount returns the total cells that are still yet to be filled in a sudoku
+func (s Sudoku) UnfilledCount() (unfilled int) {
 	done := make(chan struct{})
 
 	go func() {
-		for _, row := range s {
-			for _, col := range row {
+		for _, Row := range s {
+			for _, col := range Row {
 				if col == 0 {
 					unfilled++
 				}
@@ -293,16 +307,16 @@ func (s sudoku) unfilledCount() (unfilled int) {
 }
 
 // getEligibleMap gets a map of eligible numbers for a particular position
-// in the sudoku puzzle
-func (s sudoku) _GetEligibleMap(rowID int, colID int) EligibleNumbers {
+// in the Sudoku puzzle
+func (s Sudoku) _getEligibleMap(rowID int, colID int) EligibleNumbers {
 	myMap := standardMap()
 
-	// first get the row, column and bounded box corresponding to the position
+	// first get the Row, column and bounded box corresponding to the position
 	myRow := s.getRow(rowID)
 	myColumn := s.getColumn(colID)
 	myBoundedBox := s.getBoundedBox(rowID, colID)
 
-	// scan row, column and bounded box to eliminate already present numbers
+	// scan Row, column and bounded box to eliminate already present numbers
 	for _, col := range myRow {
 		if col != 0 {
 			myMap[col] = false
@@ -321,7 +335,7 @@ func (s sudoku) _GetEligibleMap(rowID int, colID int) EligibleNumbers {
 		}
 	}
 
-	// return the resultany eligible numbers map
+	// return the resultant eligible numbers map
 	return myMap
 }
 
@@ -334,7 +348,7 @@ func standardMap() EligibleNumbers {
 	return stdMap
 }
 
-func (r row) _getEligibleMap() EligibleNumbers {
+func (r Row) _getEligibleMap() EligibleNumbers {
 	stdMap := standardMap()
 	// make the numbers already present as NOT eligible in the map
 	for _, col := range r {
@@ -345,8 +359,8 @@ func (r row) _getEligibleMap() EligibleNumbers {
 	return stdMap
 }
 
-// nonRepeating validates whether a row is composed of non repeated numbers
-func (r row) nonRepeating() bool {
+// nonRepeating validates whether a Row is composed of non repeated numbers
+func (r Row) nonRepeating() bool {
 	myMap := make(map[int]int)
 	for _, col := range r {
 		myMap[col] = myMap[col] + 1
@@ -357,8 +371,8 @@ func (r row) nonRepeating() bool {
 	return true
 }
 
-// complete validates whether a row contains all numbers and no zeros
-func (r row) complete() bool {
+// complete validates whether a Row contains all numbers and no zeros
+func (r Row) complete() bool {
 	e := r._getEligibleMap()
 	for _, val := range e {
 		if val {
@@ -395,7 +409,8 @@ func (en EligibleNumbers) getSingularEligibleNumber() (eligNum int) {
 	return 0
 }
 
-func (en EligibleNumbers) print() {
+// Print prints the eligible numbers in a map
+func (en EligibleNumbers) Print() {
 	ea := make([]int, 0)
 	for key, val := range en {
 		if val {
@@ -405,7 +420,8 @@ func (en EligibleNumbers) print() {
 	fmt.Println(ea)
 }
 
-func (en EligibleNumbers) getList() []int {
+// GetList converts eligible numbers map into a list
+func (en EligibleNumbers) GetList() []int {
 	ea := make([]int, 0)
 	for key, val := range en {
 		if val {
