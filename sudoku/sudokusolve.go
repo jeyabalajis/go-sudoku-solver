@@ -35,7 +35,6 @@ func Solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 			(b) this combination is invalid, in which case, this guess is abandoned
 	*/
 
-	var iteration int
 	SudokuOut := sudokuIn.Copy()
 
 	unfilledCount := 0
@@ -48,10 +47,9 @@ func Solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 
 		unfilledCount = SudokuOut.UnfilledCount()
 
-		// iteration++
-		iteration = int(atomic.AddInt32(globalCounter, 1))
+		atomic.AddInt32(globalCounter, 1)
 
-		if iteration >= 10000000 {
+		if *globalCounter >= 10000000 {
 			break
 		}
 
@@ -65,7 +63,7 @@ func Solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 					if _result == -1 {
 						// incorrect Sudoku. return to caller
 						// this scenario occurs when solve is called recursively with a guess
-						return SudokuOut, SudokuOut.Solved(), iteration, errors.New("incorrect Sudoku")
+						return SudokuOut, SudokuOut.Solved(), int(*globalCounter), errors.New("incorrect Sudoku")
 					}
 				}
 			}
@@ -84,7 +82,7 @@ func Solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 				for colID, col := range row {
 					if col == 0 {
 						_cell := SudokuOut.MapEligibleNumbers(rowID, colID)
-						_potentialsLen := len(_cell.eligibleNumbers.GetList())
+						_potentialsLen := len(_cell.EligibleNumbers.GetList())
 						potentials[_potentialsLen] = _cell
 					}
 				}
@@ -105,7 +103,7 @@ func Solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 			chanSudokuSolve := make(chan Channel)
 			wg := new(sync.WaitGroup)
 
-			for _, eligNum := range cellToEvaluate.eligibleNumbers.GetList() {
+			for _, eligNum := range cellToEvaluate.EligibleNumbers.GetList() {
 
 				wg.Add(1)
 
@@ -117,9 +115,9 @@ func Solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 
 					_SudokuOut.Fill(rowID, colID, fillVal)
 
-					sudokuInter, _solved, _iteration, _err := Solve(_SudokuOut)
-					*c <- Channel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err}
-				}(SudokuOut, cellToEvaluate.rowID, cellToEvaluate.colID, eligNum, wg, &chanSudokuSolve)
+					sudokuInter, _solved, _, _err := Solve(_SudokuOut)
+					*c <- Channel{Intermediate: sudokuInter, Solved: _solved, Err: _err}
+				}(SudokuOut, cellToEvaluate.RowID, cellToEvaluate.ColID, eligNum, wg, &chanSudokuSolve)
 			}
 
 			// wait for the threads to be done & close channel once all threads are done
@@ -130,13 +128,12 @@ func Solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 
 			// collect the results and look for the right guess
 			for r := range chanSudokuSolve {
-				_sudokuInter := r.intermediate
-				_solved := r.solved
-				_err := r.err
-				iteration = iteration + r.iteration
+				_sudokuInter := r.Intermediate
+				_solved := r.Solved
+				_err := r.Err
 
 				if _solved {
-					return _sudokuInter, _solved, iteration, _err
+					return _sudokuInter, _solved, int(*globalCounter), _err
 				}
 
 				if _err.Error() == "incorrect Sudoku" {
@@ -151,5 +148,5 @@ func Solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 		}
 	}
 
-	return SudokuOut, SudokuOut.Solved(), iteration, errors.New("done")
+	return SudokuOut, SudokuOut.Solved(), int(*globalCounter), errors.New("done")
 }

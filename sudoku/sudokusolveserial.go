@@ -93,7 +93,7 @@ func solveSerial(sudokuIn Sudoku, iter ...int) (sudokuOut Sudoku, solved bool, i
 				for colID, col := range row {
 					if col == 0 {
 						_cell := sudokuOut.MapEligibleNumbers(rowID, colID)
-						_potentialsLen := len(_cell.eligibleNumbers.GetList())
+						_potentialsLen := len(_cell.EligibleNumbers.GetList())
 						potentials[_potentialsLen] = _cell
 					}
 				}
@@ -114,13 +114,13 @@ func solveSerial(sudokuIn Sudoku, iter ...int) (sudokuOut Sudoku, solved bool, i
 			}
 
 			// Pick each eligible number, fill it and see if it works
-			for eligNum, eligible := range cellToEvaluate.eligibleNumbers {
+			for eligNum, eligible := range cellToEvaluate.EligibleNumbers {
 
 				if eligible {
 
 					SudokuCopy := sudokuOut.Copy()
 
-					sudokuOut.Fill(cellToEvaluate.rowID, cellToEvaluate.colID, eligNum)
+					sudokuOut.Fill(cellToEvaluate.RowID, cellToEvaluate.ColID, eligNum)
 
 					_sudokuInter, _solved, _iteration, _err := solveSerial(sudokuOut, iteration)
 

@@ -19,21 +19,18 @@ const RowLength int = 9
 // ColLength is a constant that represents the length of a sudoku column
 const ColLength int = 9
 
-// Cell is a structure that contains a sudoku position (rowID, colid) and the eligible numbers that can be filled in it
+// Cell is a structure that contains a sudoku position (RowID, ColID) and the eligible numbers that can be filled in it
 type Cell struct {
-	rowID           int
-	colID           int
-	eligibleNumbers EligibleNumbers
+	RowID           int
+	ColID           int
+	EligibleNumbers EligibleNumbers
 }
 
 // Channel is a structure that is used to communicate the results of a solve run that is run concurrently
 type Channel struct {
-	cellMutated  Cell
-	valueOption  int
-	intermediate Sudoku
-	solved       bool
-	iteration    int
-	err          error
+	Intermediate Sudoku
+	Solved       bool
+	Err          error
 }
 
 func _getBoundedBoxIndex(rowID int, colID int) int {
@@ -256,14 +253,14 @@ func (s Sudoku) getBoundedBox(rowID int, colID int) Row {
 // MapEligibleNumbers maps eligible numbers that can be filled for a particular position in a sudoku
 func (s Sudoku) MapEligibleNumbers(rowID int, colID int) Cell {
 	eligibleNumsMap := s._getEligibleMap(rowID, colID)
-	return Cell{rowID: rowID, colID: colID, eligibleNumbers: eligibleNumsMap}
+	return Cell{RowID: rowID, ColID: colID, EligibleNumbers: eligibleNumsMap}
 }
 
 // ReduceAndFillEligibleNumber updates a specific Cell if the Cell contains only one eligible number
 func (s Sudoku) ReduceAndFillEligibleNumber(ec Cell) int {
-	myMap := ec.eligibleNumbers
-	rowID := ec.rowID
-	colID := ec.colID
+	myMap := ec.EligibleNumbers
+	rowID := ec.RowID
+	colID := ec.ColID
 
 	// ec.eligibleNumbers.Print()
 	eligNum := myMap.getSingularEligibleNumber()
