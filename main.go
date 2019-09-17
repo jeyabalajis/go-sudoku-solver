@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"go-sudoku-solver/sudoku"
+	"github.com/jeyabalajis/go-sudoku-solver/sudoku"
 	"time"
 )
 
