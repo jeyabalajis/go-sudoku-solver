@@ -9,7 +9,7 @@ import (
 var globalCounter = new(int32)
 
 // Solve takes an unsolved sudoku and solves it. It returns a Sudoku, whether it is solved or not, total number of iterations and error.
-// The error can either have a message done, which means everythingno error (or) an actual error message
+// The error can either have a message done, which means everything went well (or) incorrect sudoku, which means that the sudoku is not solvable
 func Solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 
 	/*

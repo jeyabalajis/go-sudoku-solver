@@ -10,7 +10,9 @@ type Row []int
 // Sudoku is a slice of Rows. Used for representing a sudoku puzzle, solved or otherwise
 type Sudoku []Row
 
-// EligibleNumbers - A Hashmap to keep track of which numbers are eligible to be filled in a column
+// EligibleNumbers - A hashmap to keep track of which numbers are eligible to be filled in a column.
+// The hashmap ALWAYS contains numbers 1 to 9 as the key. If a number is eligible to be filled in a cell,
+// the corresponding value is marked as true, else false.
 type EligibleNumbers map[int]bool
 
 // RowLength is a constant that represents the length of a sudoku row
@@ -145,14 +147,12 @@ func _getBoundedBoxBoundaries(rowID int, colID int) (int, int, int, int) {
 	return RowLowerBoundary, RowUpperBoundary, colLowerBoundary, colUpperBoundary
 }
 
-// Solved validates whether a sudoku is fully solved or not
+// Solved validates whether a sudoku is fully solved or not.
+// A Sudoku is considered solved when
+// 	- There are no empty Cells (i.e. Cells with number zero)
+// 	- All Rows, columns and bounded box contain numbers from 1 to 9 (i.e. complete)
+// 	- There are no repeating numbers in Rows, columns or bounded box (i.e. nonRepeating)
 func (s Sudoku) Solved() bool {
-	/*A Sudoku is considered solved when
-	- there are no empty Cells (i.e. Cells with number zero)
-	- all Rows, columns and bounded box contain numbers from 1 to 9 (i.e. complete)
-	- there are no repeating numbers in Rows, columns or bounded box (i.e. nonRepeating)
-	*/
-
 	myColumns := make(map[int]Row)
 	myBoundedBoxes := make(map[int]Row)
 
@@ -256,7 +256,10 @@ func (s Sudoku) MapEligibleNumbers(rowID int, colID int) Cell {
 	return Cell{RowID: rowID, ColID: colID, EligibleNumbers: eligibleNumsMap}
 }
 
-// ReduceAndFillEligibleNumber updates a specific Cell if the Cell contains only one eligible number
+// ReduceAndFillEligibleNumber updates a specific Cell if the Cell contains only one eligible number.
+// 	If no numbers are eligible, -1 is returned.
+// 	If more than one number is elgible, 0 is returned.
+// 	If only one number is elgible, the cell is filled with the number and this number is returned.
 func (s Sudoku) ReduceAndFillEligibleNumber(ec Cell) int {
 	myMap := ec.EligibleNumbers
 	rowID := ec.RowID
