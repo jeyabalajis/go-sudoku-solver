@@ -105,23 +105,21 @@ func Solve(sudokuIn Sudoku) (Sudoku, bool, int, error) {
 			chanSudokuSolve := make(chan Channel)
 			wg := new(sync.WaitGroup)
 
-			for eligNum, eligible := range cellToEvaluate.eligibleNumbers {
+			for _, eligNum := range cellToEvaluate.eligibleNumbers.GetList() {
 
-				if eligible {
-					wg.Add(1)
+				wg.Add(1)
 
-					// Call the solve function recursively, but as a go routine thread so that it executes asynchronously
-					go func(sudokuIn Sudoku, rowID int, colID int, fillVal int, wg *sync.WaitGroup, c *chan Channel) {
-						defer wg.Done()
+				// Call the solve function recursively, but as a go routine thread so that it executes asynchronously
+				go func(sudokuIn Sudoku, rowID int, colID int, fillVal int, wg *sync.WaitGroup, c *chan Channel) {
+					defer wg.Done()
 
-						_SudokuOut := sudokuIn.Copy()
+					_SudokuOut := sudokuIn.Copy()
 
-						_SudokuOut.Fill(rowID, colID, fillVal)
+					_SudokuOut.Fill(rowID, colID, fillVal)
 
-						sudokuInter, _solved, _iteration, _err := Solve(_SudokuOut)
-						*c <- Channel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err}
-					}(SudokuOut, cellToEvaluate.rowID, cellToEvaluate.colID, eligNum, wg, &chanSudokuSolve)
-				}
+					sudokuInter, _solved, _iteration, _err := Solve(_SudokuOut)
+					*c <- Channel{intermediate: sudokuInter, solved: _solved, iteration: _iteration, err: _err}
+				}(SudokuOut, cellToEvaluate.rowID, cellToEvaluate.colID, eligNum, wg, &chanSudokuSolve)
 			}
 
 			// wait for the threads to be done & close channel once all threads are done
