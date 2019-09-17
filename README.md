@@ -25,3 +25,8 @@ The solver employs two different sub-approaches to solve a sudoku
 > The sudoku is represented as a slice of int slice. A custom Copy method is written to perform deep copy of a sudoku. This is important
 > since each thread of solver must work on a distinct copy of a sudoku to avoid **data race**. 
 
+# Results
+
+Here's a snapshot of the solver run on arguably the world's hardest sudoku ever!
+
+![Sudoku Solver results](/images/sudoku_run_results.png)

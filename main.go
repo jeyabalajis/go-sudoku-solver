@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	mySudoku := sudoku.NewSudokuFromFile("tests/hardest_3.txt")
+	mySudoku := sudoku.NewSudokuFromFile("tests/hardest_4.txt")
 
 	mySudoku.Print()
 	start := time.Now()
