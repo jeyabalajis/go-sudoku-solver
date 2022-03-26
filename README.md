@@ -32,6 +32,6 @@ The solver employs two different sub-approaches to solve a sudoku
 
 # Results
 
-Here's a snapshot of the solver run on arguably the world's hardest sudoku ever!
+Here's a snapshot of the solver run on arguably the world's hardest sudoku ever.
 
 ![Sudoku Solver results](/images/sudoku_run_results.png)
