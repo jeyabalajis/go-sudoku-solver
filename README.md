@@ -1,5 +1,5 @@
 # go-sudoku-solver
-A __concurrent__ & __recursive__ sudoku solver written in golang!
+A __concurrent__ & __recursive__ sudoku solver written in golang, based on [hexagonal architecture](https://beyondxscratch.com/2017/08/19/hexagonal-architecture-the-practical-guide-for-a-clean-architecture/#acl)
 
 # Motivation
 This is a small project that showcases the power of go routines by solving a sudoku puzzle. This solver solves
