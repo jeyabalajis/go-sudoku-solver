@@ -10,6 +10,8 @@ arguably [the world's hardest sudoku ever](https://curiosity.com/topics/a-finnis
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/jeyabalajis/go-sudoku-solver)](https://goreportcard.com/report/github.com/jeyabalajis/go-sudoku-solver)
 
+[![CodeFactor](https://www.codefactor.io/repository/github/jeyabalajis/go-sudoku-solver/badge/master)](https://www.codefactor.io/repository/github/jeyabalajis/go-sudoku-solver/overview/master)
+
 # Solution Approach
 
 The solver employs two different sub-approaches to solve a sudoku
