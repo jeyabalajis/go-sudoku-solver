@@ -6,10 +6,8 @@ This is a small project that showcases the power of go routines by solving a sud
 arguably [the world's hardest sudoku ever](https://curiosity.com/topics/a-finnish-mathematician-claimed-that-this-is-the-most-difficult-sudoku-puzzle-in-the-world-curiosity/) in around 3 seconds.
 
 # Build status
-[![CircleCI](https://circleci.com/gh/jeyabalajis/go-sudoku-solver/tree/master.svg?style=svg)](https://circleci.com/gh/jeyabalajis/go-sudoku-solver/tree/master)
-
+[![CircleCI](https://circleci.com/gh/jeyabalajis/go-sudoku-solver/tree/master.svg?style=shield)](https://circleci.com/gh/jeyabalajis/go-sudoku-solver/tree/master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jeyabalajis/go-sudoku-solver)](https://goreportcard.com/report/github.com/jeyabalajis/go-sudoku-solver)
-
 [![CodeFactor](https://www.codefactor.io/repository/github/jeyabalajis/go-sudoku-solver/badge/master)](https://www.codefactor.io/repository/github/jeyabalajis/go-sudoku-solver/overview/master)
 
 # Solution Approach
