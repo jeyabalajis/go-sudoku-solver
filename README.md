@@ -8,7 +8,6 @@ arguably [the world's hardest sudoku ever](https://curiosity.com/topics/a-finnis
 # Build status
 [![CircleCI](https://circleci.com/gh/jeyabalajis/go-sudoku-solver/tree/master.svg?style=shield)](https://circleci.com/gh/jeyabalajis/go-sudoku-solver/tree/master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jeyabalajis/go-sudoku-solver)](https://goreportcard.com/report/github.com/jeyabalajis/go-sudoku-solver)
-[![CodeFactor](https://www.codefactor.io/repository/github/jeyabalajis/go-sudoku-solver/badge/master)](https://www.codefactor.io/repository/github/jeyabalajis/go-sudoku-solver/overview/master)
 
 # Solution Approach
 
