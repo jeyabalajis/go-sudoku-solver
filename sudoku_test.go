@@ -3,13 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/jeyabalajis/go-sudoku-solver/sudoku"
 	"testing"
 	"time"
+
+	"github.com/jeyabalajis/go-sudoku-solver/sudoku"
 )
 
 func TestNewSudokuFromFile(t *testing.T) {
-	mySudoku := sudoku.NewSudokuFromFile("tests/simple_1.txt")
+	mySudoku := sudoku.NewSudokuFromFile("tests/medium_1.txt")
 
 	if len(mySudoku) != 9 {
 		t.Errorf("Expected 9 rows, but got %d", len(mySudoku))

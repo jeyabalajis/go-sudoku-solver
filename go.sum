@@ -1,2 +1,2 @@
-github.com/jeyabalajis/go-sudoku-solver v0.0.0-20190920035721-ad6b98c01c25 h1:+Ipl7u/AI8C1OXMhKtBSaqXrVK3OVCvJS4gfltiBkSY=
-github.com/jeyabalajis/go-sudoku-solver v0.0.0-20190920035721-ad6b98c01c25/go.mod h1:mmLgR77IRrLoEKYC2IGHCuDeUls5XPGubvUKdv9ubaU=
+github.com/jeyabalajis/go-sudoku-solver/sudoku v0.0.0-20221015130325-312afbc069fb h1:QAOaVeYR7RT+Jit7r3ZDFdgdu477Alhc2BhOR9tto6o=
+github.com/jeyabalajis/go-sudoku-solver/sudoku v0.0.0-20221015130325-312afbc069fb/go.mod h1:pL6wXsv0+PQGKBUoh5mAAgphIOC/Uq/CYb1O4ZkYAKI=

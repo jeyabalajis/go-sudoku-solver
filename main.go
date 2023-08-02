@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/jeyabalajis/go-sudoku-solver/sudoku"
 	"time"
+
+	"github.com/jeyabalajis/go-sudoku-solver/sudoku"
 )
 
 func main() {
-	mySudoku := sudoku.NewSudokuFromFile("tests/hardest_4.txt")
+	mySudoku := sudoku.NewSudokuFromFile("tests/hardest_1.txt")
 
 	mySudoku.Print()
 	start := time.Now()
